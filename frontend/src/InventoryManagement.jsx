@@ -5,7 +5,7 @@ import { useAuth } from "./context/AuthContext";
 import { Navigate } from "react-router-dom";
 
 // Import components from the components folder
-import DarkModeToggle from "./components/DarkModeToggle";
+import DarkModeToggle from "./Components/DarkModeToggle";
 import StockView from "./Components/StockView";
 import StockEntry from "./Components/StockEntry";
 import RequestStock from "./Components/RequestStock";

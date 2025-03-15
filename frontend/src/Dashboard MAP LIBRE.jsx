@@ -7,9 +7,9 @@ import { useAuth } from "./context/AuthContext";
 import { useLanguage } from "./context/LanguageContext";
 
 // Existing visualizations
-import ThreeDPieChart from "./components/ThreeDPieChart";
+import ThreeDPieChart from "./Components/ThreeDPieChart";
 // NEW: Import the MapLibreMap component instead of the GeoDistributionMap component
-import MapLibreMap from "./components/MapLibreMap";
+import MapLibreMap from "./Components/MapLibreMap";
 
 // ---- DashboardSection Component ----
 const DashboardSection = ({ title, darkMode, french, children, data }) => {

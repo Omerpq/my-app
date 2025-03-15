@@ -5,10 +5,10 @@ import { getDashboardStats } from "./api";
 import { Navigate } from "react-router-dom";
 import { useAuth } from "./context/AuthContext";
 import { useLanguage } from "./context/LanguageContext";
-import ThreeDColumnChart from "./components/ThreeDColumnChart";
+import ThreeDColumnChart from "./Components/ThreeDColumnChart";
 // Existing visualizations
-import ThreeDPieChart from "./components/ThreeDPieChart";
-import GeoDistributionMap from "./components/GeoDistributionMap";
+import ThreeDPieChart from "./Components/ThreeDPieChart";
+import GeoDistributionMap from "./Components/GeoDistributionMap";
 
 // NEW: Import the Eye icon from react-icons
 import { FaEye } from "react-icons/fa";

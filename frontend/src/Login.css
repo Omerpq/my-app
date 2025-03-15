@@ -1,0 +1,40 @@
+/* src/Login.css */
+
+/* Background image class for login page */
+.bg-login {
+  background: url("./images/Quote.webp") no-repeat center center;
+  background-size: cover;
+}
+
+/* Dark red glow for the login box in dark mode */
+.dark-glow {
+  box-shadow: 0 0 20px 2px rgba(255,145,77,255);
+}
+
+/* Spinner for loading indicator (if needed in the future) */
+.spinner {
+  border: 2px solid #f3f3f3;
+  border-top: 2px solid #ff9933;
+  border-radius: 50%;
+  width: 16px;
+  height: 16px;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+/* Shake animation for error feedback (if needed) */
+@keyframes shake {
+  0% { transform: translateX(0); }
+  25% { transform: translateX(-5px); }
+  50% { transform: translateX(5px); }
+  75% { transform: translateX(-5px); }
+  100% { transform: translateX(0); }
+}
+
+.animate-shake {
+  animation: shake 0.3s ease-in-out;
+}

@@ -1,0 +1,91 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@keyframes glowPulse {
+  0% {
+    box-shadow: 0 0 10px #3b82f6;
+  }
+  50% {
+    box-shadow: 0 0 20px #3b82f6;
+  }
+  100% {
+    box-shadow: 0 0 10px #3b82f6;
+  }
+}
+
+@keyframes goodbyeGlow {
+  0% {
+    box-shadow: 0 0 0px #ff4500;
+  }
+  50% {
+    box-shadow: 0 0 20px #ff4500;
+  }
+  100% {
+    box-shadow: 0 0 0px #ff4500;
+  }
+}
+
+.goodbye-glow {
+  animation: goodbyeGlow 1s ease-in-out forwards;
+}
+
+/* Custom classes to force tick and cross colors */
+.force-green {
+  color: #10B981 !important;
+}
+
+.force-red {
+  color: #EF4444 !important;
+}
+/* Custom classes to force tick and cross colors with higher specificity */
+table tbody tr td span.force-green {
+  color: #10B981 !important;
+}
+table tbody tr td span.force-red {
+  color: #EF4444 !important;
+}
+
+/* Dark mode scrollbar styling */
+/* For WebKit-based browsers (Chrome, Safari, Edge) - Dark mode */
+.custom-scrollbar-dark::-webkit-scrollbar {
+  height: 6px; /* Slim height for horizontal scrollbar */
+}
+
+.custom-scrollbar-dark::-webkit-scrollbar-track {
+  background: #333; /* Dark track */
+}
+
+.custom-scrollbar-dark::-webkit-scrollbar-thumb {
+  background-color: #555; /* Dark thumb */
+  border-radius: 3px;
+  border: 1px solid rgba(59,130,246,0.4); /* Subtle blue border */
+  box-shadow: 0 0 4px rgba(59,130,246,0.4); /* Subtle blue glow */
+}
+
+/* For Firefox - Dark mode */
+.custom-scrollbar-dark {
+  scrollbar-width: thin;
+  scrollbar-color: #555 #333; /* thumb and track colors */
+}
+
+/* Light mode scrollbar styling */
+/* For WebKit-based browsers (Chrome, Safari, Edge) - Light mode */
+.custom-scrollbar-light::-webkit-scrollbar {
+  height: 6px;
+}
+
+.custom-scrollbar-light::-webkit-scrollbar-track {
+  background: #eee; /* Light track */
+}
+
+.custom-scrollbar-light::-webkit-scrollbar-thumb {
+  background-color: #ccc; /* Light thumb */
+  border-radius: 3px;
+}
+
+/* For Firefox - Light mode */
+.custom-scrollbar-light {
+  scrollbar-width: thin;
+  scrollbar-color: #ccc #eee; /* thumb and track colors */
+}

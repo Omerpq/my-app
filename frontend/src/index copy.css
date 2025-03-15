@@ -1,0 +1,31 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+@keyframes glowPulse {
+    0% {
+      box-shadow: 0 0 10px #3b82f6;
+    }
+    50% {
+      box-shadow: 0 0 20px #3b82f6;
+    }
+    100% {
+      box-shadow: 0 0 10px #3b82f6;
+    }
+    @keyframes goodbyeGlow {
+        0% {
+          box-shadow: 0 0 0px #ff4500;
+        }
+        50% {
+          box-shadow: 0 0 20px #ff4500;
+        }
+        100% {
+          box-shadow: 0 0 0px #ff4500;
+        }
+      }
+      
+      .goodbye-glow {
+        animation: goodbyeGlow 1s ease-in-out forwards;
+      }
+      
+  }
+  

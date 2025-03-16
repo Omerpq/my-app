@@ -19,20 +19,20 @@ const ThreeDPieChart = ({ data = [], darkMode }) => {
   // State for toggling between Pie and Donut
   const [isDonut, setIsDonut] = useState(false);
 
-  // Convert your data => Highcharts format
+  // Define a mapping from status to color
+  const statusColors = {
+    Active: 'rgba(0,123,255,0.9)',      // Blue for Active projects
+    Completed: 'rgba(40,167,69,0.9)',    // Green for Completed projects
+    Overdue: 'rgba(255,69,0,0.9)'         // Red for Overdue projects
+  };
+
+  // Convert your data into Highcharts format, applying the correct color
   const seriesData = data.map(item => ({
     name: item.status,
-    y: item.count
+    y: item.count,
+    color: statusColors[item.status] || 'rgba(0,0,0,0.5)'
   }));
 
-  // Color array for your slices
-  const colors = [
-    'rgba(0,123,255,0.9)', // Active (blue)
-    'rgba(40,167,69,0.9)', // Completed (green)
-    'rgba(255,69,0,0.9)'   // Overdue (red)
-  ];
-
-  // Build the Highcharts options object
   const options = {
     chart: {
       type: 'pie',
@@ -62,7 +62,6 @@ const ThreeDPieChart = ({ data = [], darkMode }) => {
         allowPointSelect: true,
         cursor: 'pointer',
         depth: 50,
-        // If isDonut is true => 50% inner size, else => 0% (normal pie)
         innerSize: isDonut ? '50%' : '0%',
         dataLabels: {
           enabled: true,
@@ -74,10 +73,9 @@ const ThreeDPieChart = ({ data = [], darkMode }) => {
         },
         borderColor: '#ffffff',
         borderWidth: 1,
-        // Glow effect using a bright shadow
         shadow: {
           enabled: true,
-          color: 'rgba(255,255,255,0.6)', // bright glow color
+          color: 'rgba(255,255,255,0.6)',
           offsetX: 0,
           offsetY: 0,
           width: 15
@@ -87,8 +85,8 @@ const ThreeDPieChart = ({ data = [], darkMode }) => {
     series: [
       {
         name: 'Projects',
-        data: seriesData,
-        colors
+        data: seriesData
+        // Remove the default colors property so that our point colors are used
       }
     ]
   };
@@ -106,9 +104,7 @@ const ThreeDPieChart = ({ data = [], darkMode }) => {
       <div className="flex justify-end mb-2">
         <label className="flex items-center cursor-pointer">
           <span
-            className={`mr-2 font-semibold ${
-              darkMode ? 'text-gray-300' : 'text-gray-700'
-            }`}
+            className={`mr-2 font-semibold ${darkMode ? 'text-gray-300' : 'text-gray-700'}`}
           >
             {isDonut ? 'Donut' : 'Pie'}
           </span>

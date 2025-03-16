@@ -31,7 +31,7 @@ const LowInventoryModal = ({ isOpen, onClose, darkMode }) => {
     if (isOpen) {
       document.body.style.overflow = "hidden";
       fetch("https://my-app-1-uzea.onrender.com/api/inventory/lowstock")
-      .then((res) => res.json())
+        .then((res) => res.json())
         .then((data) => setItems(data))
         .catch((err) =>
           console.error("Failed to fetch low inventory items", err)
@@ -113,7 +113,7 @@ const TotalHoursModal = ({ isOpen, onClose, darkMode }) => {
     if (isOpen) {
       document.body.style.overflow = "hidden";
       fetch("https://my-app-1-uzea.onrender.com/api/projects/dashboard/hours")
-      .then((res) => res.json())
+        .then((res) => res.json())
         .then((data) => setHoursDetails(data))
         .catch((err) =>
           console.error("Failed to fetch total hours details", err)
@@ -202,7 +202,7 @@ const AvgCompletionModal = ({ isOpen, onClose, darkMode }) => {
     if (isOpen) {
       document.body.style.overflow = "hidden";
       fetch("https://my-app-1-uzea.onrender.com/api/projects/dashboard/avg-completion")
-      .then((res) => res.json())
+        .then((res) => res.json())
         .then((data) => setAvgDetails(data))
         .catch((err) =>
           console.error("Failed to fetch avg completion details", err)
@@ -296,7 +296,7 @@ const ActiveProjectsModal = ({ isOpen, onClose, darkMode }) => {
     if (isOpen) {
       document.body.style.overflow = "hidden";
       fetch("https://my-app-1-uzea.onrender.com/api/projects/active")
-      .then((res) => res.json())
+        .then((res) => res.json())
         .then((data) => setProjects(Array.isArray(data) ? data : []))
         .catch((err) => console.error("Failed to fetch active projects", err));
     } else {
@@ -386,7 +386,7 @@ const CompletedProjectsModal = ({ isOpen, onClose, darkMode }) => {
     if (isOpen) {
       document.body.style.overflow = "hidden";
       fetch("https://my-app-1-uzea.onrender.com/api/projects/completed")
-      .then((res) => res.json())
+        .then((res) => res.json())
         .then((data) => setProjects(Array.isArray(data) ? data : []))
         .catch((err) =>
           console.error("Failed to fetch completed projects", err)
@@ -470,7 +470,7 @@ const OverdueProjectsModal = ({ isOpen, onClose, darkMode }) => {
     if (isOpen) {
       document.body.style.overflow = "hidden";
       fetch("https://my-app-1-uzea.onrender.com/api/projects/overdue")
-      .then((res) => res.json())
+        .then((res) => res.json())
         .then((data) => setProjects(Array.isArray(data) ? data : []))
         .catch((err) => console.error("Failed to fetch overdue projects", err));
     } else {
@@ -555,7 +555,7 @@ const PendingRequestsModal = ({ isOpen, onClose, darkMode }) => {
     if (isOpen) {
       document.body.style.overflow = "hidden";
       fetch("https://my-app-1-uzea.onrender.com/api/projects/request_stock/pending")
-      .then((res) => res.json())
+        .then((res) => res.json())
         .then((data) => setRequests(Array.isArray(data) ? data : []))
         .catch((err) => console.error("Failed to fetch pending requests", err));
     } else {
@@ -661,14 +661,11 @@ const ApprovedRequestsModal = ({ isOpen, onClose, darkMode }) => {
 
   if (!isOpen) return null;
 
-  // Use the same gradient helper from your code
   const keyGradient = darkMode
     ? "bg-gradient-to-r from-green-400 to-blue-500 bg-clip-text text-transparent"
     : "bg-gradient-to-r from-blue-800 to-blue-600 bg-clip-text text-transparent";
 
   return (
-    // Changed "items-start" to ensure the modal starts from the top,
-    // and adjusted margin-top responsively (mt-12 for mobile, mt-8 for larger screens)
     <div className="fixed inset-0 z-50 flex items-start justify-center bg-black bg-opacity-50">
       <div
         className={`
@@ -758,7 +755,7 @@ const RejectedRequestsModal = ({ isOpen, onClose, darkMode }) => {
     if (isOpen) {
       document.body.style.overflow = "hidden";
       fetch("https://my-app-1-uzea.onrender.com/api/projects/request_stock/rejected")
-      .then((res) => res.json())
+        .then((res) => res.json())
         .then((data) => setRequests(Array.isArray(data) ? data : []))
         .catch((err) => console.error("Failed to fetch rejected requests", err));
     } else {
@@ -770,7 +767,6 @@ const RejectedRequestsModal = ({ isOpen, onClose, darkMode }) => {
   }, [isOpen]);
   if (!isOpen) return null;
 
-  // Define red gradient for key columns in Rejected Requests modal
   const redGradient = darkMode
     ? "bg-gradient-to-r from-red-500 to-red-700 bg-clip-text text-transparent"
     : "bg-gradient-to-r from-red-500 to-red-800 bg-clip-text text-transparent";
@@ -884,7 +880,7 @@ const DashboardSection = ({ title, darkMode, french, children, data }) => {
 };
 
 // --------------------------
-// KpiCard Component with Left Accent (unchanged from your reference)
+// KpiCard Component with Left Accent (unchanged)
 // --------------------------
 const KpiCard = ({ title, value, borderColor, actionIcon, onAction }) => {
   const { darkMode } = useTheme();
@@ -959,16 +955,14 @@ const Dashboard = () => {
   // Minimal addition: fetch inventory data & handle 404 or non-array
   useEffect(() => {
     fetch("https://my-app-1-uzea.onrender.com/api/inventory/levels")
-    .then((res) => {
+      .then((res) => {
         if (!res.ok) {
-          // If 404 or other error, just return empty array
           console.error("Inventory endpoint returned:", res.status);
           return [];
         }
         return res.json();
       })
       .then((data) => {
-        // Ensure data is an array
         setInventoryData(Array.isArray(data) ? data : []);
       })
       .catch((err) => {
@@ -1052,24 +1046,23 @@ const Dashboard = () => {
               value={stats?.active_projects ?? 0}
               borderColor="border-blue-500"
               actionIcon={<FaEye className="text-xl text-blue-500" />}
-              onAction={() => setShowActiveProjectsModal(true)}  // <-- show the modal
-              />
+              onAction={() => setShowActiveProjectsModal(true)}
+            />
             <KpiCard
               title={french ? "Projets terminés" : "Completed Projects"}
               value={stats?.completed_projects ?? 0}
               borderColor="border-green-500"
               actionIcon={<FaEye className="text-xl text-green-500" />}
-              onAction={() => setShowCompletedProjectsModal(true)}  // <-- show the modal
-                
-             />
+              onAction={() => setShowCompletedProjectsModal(true)}
+            />
             <KpiCard
               title={french ? "Projets en retard" : "Overdue Projects"}
               value={stats?.overdue_projects ?? 0}
               borderColor="border-red-500"
               actionIcon={<FaEye className="text-xl text-red-500" />}
-              onAction={() => setShowOverdueProjectsModal(true)}  // <-- show the modal
-             />
-              <KpiCard
+              onAction={() => setShowOverdueProjectsModal(true)}
+            />
+            <KpiCard
               title={
                 french
                   ? "Approbations de demandes en attente"
@@ -1147,17 +1140,14 @@ const Dashboard = () => {
         )}
       </main>
 
-      {/* Dashboard Sections in a 2-column grid on large screens */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-0 m-2">
+      {/* Updated Dashboard Sections: Each in its own row */}
+      <div className="grid grid-cols-1 gap-0 m-2">
         <DashboardSection
           title={french ? "Répartition des projets" : "Projects Status"}
           darkMode={darkMode}
           french={french}
         >
-          <ThreeDPieChart
-            data={stats?.projectsStatusData || []}
-            darkMode={darkMode}
-          />
+          <ThreeDPieChart data={stats?.projectsStatusData || []} darkMode={darkMode} />
         </DashboardSection>
 
         <DashboardSection
@@ -1165,7 +1155,6 @@ const Dashboard = () => {
           darkMode={darkMode}
           french={french}
         >
-          {/* Pass the fetched inventoryData || [] here to avoid map error */}
           <ThreeDColumnChart data={inventoryData || []} darkMode={darkMode} />
         </DashboardSection>
       </div>
@@ -1182,10 +1171,7 @@ const Dashboard = () => {
             : "Projects Geographic Distribution"}
         </h2>
         <div className="mt-2">
-          <GeoDistributionMap
-            darkMode={darkMode}
-            data={stats?.projectLocations || []}
-          />
+          <GeoDistributionMap darkMode={darkMode} data={stats?.projectLocations || []} />
         </div>
       </section>
 

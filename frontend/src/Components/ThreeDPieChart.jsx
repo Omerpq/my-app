@@ -16,21 +16,31 @@ if (Highcharts3DModule && typeof Highcharts3DModule.init === 'function') {
 const ThreeDPieChart = ({ data = [], darkMode }) => {
   const chartRef = useRef(null);
 
-  // State for toggling between Pie and Donut
+  // Toggle between Pie and Donut
   const [isDonut, setIsDonut] = useState(false);
 
-  // Define a mapping from status to color
-  const statusColors = {
-    Active: 'rgba(0,123,255,0.9)',      // Blue for Active projects
-    Completed: 'rgba(40,167,69,0.9)',    // Green for Completed projects
-    Overdue: 'rgba(255,69,0,0.9)'         // Red for Overdue projects
+  // Minimal change: map any variation of status to "active", "completed", or "overdue"
+  const getColorForStatus = (rawStatus) => {
+    // Normalize the string: trim whitespace, make lowercase
+    const status = rawStatus.trim().toLowerCase();
+
+    if (status === 'active') {
+      return 'rgba(0,123,255,0.9)';       // Blue
+    } else if (status === 'completed') {
+      return 'rgba(40,167,69,0.9)';       // Green
+    } else if (status === 'overdue') {
+      return 'rgba(255,69,0,0.9)';        // Red
+    } else {
+      return 'rgba(128,128,128,0.7)';     // Gray fallback
+    }
   };
 
-  // Convert your data into Highcharts format, applying the correct color
+  // Build series data, applying the color logic above
   const seriesData = data.map(item => ({
+    // Keep original item.status for display (so it might show "Overdue" or "overdue")
     name: item.status,
     y: item.count,
-    color: statusColors[item.status] || 'rgba(0,0,0,0.5)'
+    color: getColorForStatus(item.status)
   }));
 
   const options = {
@@ -62,6 +72,7 @@ const ThreeDPieChart = ({ data = [], darkMode }) => {
         allowPointSelect: true,
         cursor: 'pointer',
         depth: 50,
+        // Switch between donut and pie
         innerSize: isDonut ? '50%' : '0%',
         dataLabels: {
           enabled: true,
@@ -86,7 +97,6 @@ const ThreeDPieChart = ({ data = [], darkMode }) => {
       {
         name: 'Projects',
         data: seriesData
-        // Remove the default colors property so that our point colors are used
       }
     ]
   };

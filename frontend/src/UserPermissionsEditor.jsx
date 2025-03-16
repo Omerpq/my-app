@@ -74,7 +74,7 @@ const PERMISSION_LABELS = {
   canViewReports: "View Reports"
 };
 
-const BASE_URL = "http://localhost:5000/api/users";
+const BASE_URL = "https://my-app-1-uzea.onrender.com/api/users";
 
 const UserPermissionsEditor = () => {
   const { user: currentUser } = useAuth();

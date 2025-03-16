@@ -5,7 +5,7 @@ import { useAuth } from "./context/AuthContext";
 import { useTheme } from "./context/ThemeContext";
 
 // -------------- DarkModeToggleWrapper --------------
-// Copied from UserManagement.jsx for a consistent toggle
+// Copied from UserManagement.jsx for consistency
 const DarkModeToggleWrapper = () => {
   const { darkMode, toggleTheme } = useTheme();
   return (
@@ -98,6 +98,14 @@ const PERMISSION_LABELS = {
   canConfirmDelivery: "View Delivery",
   canViewAlerts: "View Alerts",
   canViewReports: "View Reports",
+};
+
+// Define group-specific enabled chip colors
+const GROUP_ENABLED_COLORS = {
+  "Dashboard": "bg-indigo-500 hover:bg-indigo-600",
+  "User Management": "bg-blue-500 hover:bg-blue-600",
+  "Project Management": "bg-orange-500 hover:bg-orange-600",
+  "Inventory Management": "bg-teal-500 hover:bg-teal-600",
 };
 
 const BASE_URL = "https://my-app-1-uzea.onrender.com/api/users";
@@ -208,20 +216,17 @@ const UserPermissionsEditor = () => {
   };
 
   // -------------- Chip styling --------------
-  const getChipClasses = (perm) => {
+  const getChipClasses = (groupName, perm) => {
     const enabled = updatedPermissions.includes(perm);
-    return `cursor-pointer px-3 py-1 rounded-full text-sm transition-colors duration-200 ${
-      enabled ? "bg-green-500 text-white hover:bg-green-600" : "bg-gray-300 text-gray-900 hover:bg-gray-400"
-    }`;
+    const baseClasses = "cursor-pointer px-3 py-1 rounded-full text-sm transition-colors duration-200";
+    const disabledClasses = "bg-gray-300 text-gray-900 hover:bg-gray-400";
+    const enabledClasses = GROUP_ENABLED_COLORS[groupName] + " text-white";
+    return `${baseClasses} ${enabled ? enabledClasses : disabledClasses}`;
   };
 
-  // -------------- Render --------------
   return (
-    <div
-      style={containerStyle}
-      className="rounded-xl shadow-md border min-h-screen transition-all duration-500"
-    >
-      {/* Replacing minimal header with the same style from UserManagement */}
+    <div style={containerStyle} className="rounded-xl shadow-md border min-h-screen transition-all duration-500">
+      {/* Header - copied from UserManagement.jsx */}
       <header
         className={`${darkMode ? "bg-gray-800 text-white border-gray-700" : "bg-white text-gray-900 border-gray-200"}
           flex justify-between items-center p-6 shadow-lg border`}
@@ -300,12 +305,11 @@ const UserPermissionsEditor = () => {
                 ...provided,
                 color: darkMode ? "#ffffff" : "#1a202c",
               }),
-              // -------------- Clear indicator: turn red on hover --------------
               clearIndicator: (provided) => ({
                 ...provided,
                 color: darkMode ? "#ffffff" : "#1a202c",
                 ":hover": {
-                  color: "#ff0000", // red on hover
+                  color: "#ff0000",
                 },
               }),
             }}
@@ -327,7 +331,7 @@ const UserPermissionsEditor = () => {
                     {perms.map((perm) => (
                       <div
                         key={perm}
-                        className={getChipClasses(perm)}
+                        className={getChipClasses(groupName, perm)}
                         onClick={() => togglePermission(perm)}
                         title={perm}
                       >

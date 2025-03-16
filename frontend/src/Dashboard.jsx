@@ -667,13 +667,14 @@ const ApprovedRequestsModal = ({ isOpen, onClose, darkMode }) => {
     : "bg-gradient-to-r from-blue-800 to-blue-600 bg-clip-text text-transparent";
 
   return (
-    // 1) Changed "items-center" to "items-start" below:
+    // Changed "items-start" to ensure the modal starts from the top,
+    // and adjusted margin-top responsively (mt-12 for mobile, mt-8 for larger screens)
     <div className="fixed inset-0 z-50 flex items-start justify-center bg-black bg-opacity-50">
-      {/* 2) Added `mt-8`, `max-h-[90vh]`, and `overflow-auto` to allow scrolling */}
       <div
         className={`
           ${darkMode ? "bg-gray-800 text-white" : "bg-white text-black"} 
-          rounded-lg shadow-lg max-w-4xl w-full p-6 mt-8 
+          rounded-lg shadow-lg max-w-4xl w-full p-6 pt-4 
+          mt-12 md:mt-8 
           max-h-[90vh] overflow-auto
         `}
       >

@@ -10,7 +10,6 @@ import {
 } from "./api";
 import { useAuth } from "./context/AuthContext";
 import { Navigate } from "react-router-dom";
-import UserPermissionsEditor from "./UserPermissionsEditor";
 
 const initialNewUser = {
   name: "",
@@ -255,13 +254,6 @@ const UserManagement = () => {
           <DarkModeToggleWrapper />
         </div>
       </header>
-
-      {/* Render User Permissions Editor for Administrators */}
-      {currentUser.role === "Administrator" && (
-        <div className="p-6">
-          <UserPermissionsEditor userId={56} />
-        </div>
-      )}
 
       {/* Navigation for "Add User" button */}
       {canCreate && (

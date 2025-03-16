@@ -4,21 +4,48 @@ import Select from "react-select";
 import { useAuth } from "./context/AuthContext";
 import { useTheme } from "./context/ThemeContext";
 
+// -------------- DarkModeToggleWrapper --------------
+// Copied from UserManagement.jsx for a consistent toggle
+const DarkModeToggleWrapper = () => {
+  const { darkMode, toggleTheme } = useTheme();
+  return (
+    <div className="flex items-center">
+      <label className="flex items-center cursor-pointer">
+        <span className="mr-2 font-semibold text-gray-300">Dark Mode</span>
+        <div className="relative">
+          <input type="checkbox" className="sr-only" checked={darkMode} onChange={toggleTheme} />
+          <div
+            className={`block w-10 h-6 rounded-full transition-all duration-500 ${
+              darkMode
+                ? "bg-gradient-to-r from-red-700 to-[#800000] shadow-[0_0_14px_#800000]"
+                : "bg-gray-600 shadow-inner"
+            }`}
+          ></div>
+          <div
+            className={`absolute w-4 h-4 bg-white rounded-full top-1 transition-transform duration-500 ${
+              darkMode
+                ? "translate-x-4 bg-gray-300 shadow-[0_0_12px_#800000]"
+                : "translate-x-1 bg-gray-600"
+            }`}
+          ></div>
+        </div>
+      </label>
+    </div>
+  );
+};
+
 // -----------------------------
 // GROUP PERMISSIONS BY CATEGORY
-// Added "Dashboard" group at the top with its sub-permission.
 // -----------------------------
 const PERMISSIONS_GROUPS = {
-  "Dashboard": [
-    "canAccessDashboard"
-  ],
+  "Dashboard": ["canAccessDashboard"],
   "User Management": [
     "canAccessUserManagement",
+    "canAccessUserPermissions",
     "canViewUsers",
     "canCreateUser",
     "canEditUser",
-    "canDeleteUser"
-    // "canAssignUserRoles"
+    "canDeleteUser",
   ],
   "Project Management": [
     "canAccessProjectManagement",
@@ -26,10 +53,9 @@ const PERMISSIONS_GROUPS = {
     "canCreateProject",
     "canEditProject",
     "canDeleteProject",
-    "canManageProjectTeam"
   ],
   "Inventory Management": [
-    "canAccessInventoryManagement", // <-- Restored
+    "canAccessInventoryManagement",
     "canViewStock",
     "canAddStockEntry",
     "canRequestStock",
@@ -38,8 +64,8 @@ const PERMISSIONS_GROUPS = {
     "canDispatchStock",
     "canConfirmDelivery",
     "canViewAlerts",
-    "canViewReports"
-  ]
+    "canViewReports",
+  ],
 };
 
 // -----------------------------
@@ -50,6 +76,7 @@ const PERMISSION_LABELS = {
   canAccessDashboard: "Dashboard",
   // User Management
   canAccessUserManagement: "User Management",
+  canAccessUserPermissions: "User Permissions",
   canViewUsers: "View",
   canCreateUser: "Create",
   canEditUser: "Edit",
@@ -60,7 +87,6 @@ const PERMISSION_LABELS = {
   canCreateProject: "Create",
   canEditProject: "Edit",
   canDeleteProject: "Delete",
-  canManageProjectTeam: "Manage Team",
   // Inventory Management
   canAccessInventoryManagement: "Inventory Management",
   canViewStock: "View Stock",
@@ -71,7 +97,7 @@ const PERMISSION_LABELS = {
   canDispatchStock: "Dispatches",
   canConfirmDelivery: "View Delivery",
   canViewAlerts: "View Alerts",
-  canViewReports: "View Reports"
+  canViewReports: "View Reports",
 };
 
 const BASE_URL = "https://my-app-1-uzea.onrender.com/api/users";
@@ -88,7 +114,16 @@ const UserPermissionsEditor = () => {
   const [userData, setUserData] = useState(null);
   const [updatedPermissions, setUpdatedPermissions] = useState([]);
 
-  // Fetch all users to populate the dropdown
+  // All permission groups expanded by default
+  const [openGroups, setOpenGroups] = useState(() => {
+    const init = {};
+    Object.keys(PERMISSIONS_GROUPS).forEach((group) => {
+      init[group] = true;
+    });
+    return init;
+  });
+
+  // -------------- Lifecycle --------------
   useEffect(() => {
     const fetchAllUsers = async () => {
       try {
@@ -98,10 +133,9 @@ const UserPermissionsEditor = () => {
 
         // Exclude administrators from the drop-down
         const nonAdmins = data.filter((u) => u.role !== "Administrator");
-
         const options = nonAdmins.map((u) => ({
           value: u.id.toString(),
-          label: `${u.name} (${u.role}) - ${u.email}`
+          label: `${u.name} (${u.role}) - ${u.email}`,
         }));
         setAllUsers(options);
       } catch (error) {
@@ -111,7 +145,6 @@ const UserPermissionsEditor = () => {
     fetchAllUsers();
   }, []);
 
-  // When selectedUsers changes, load the permissions for the first selected user
   useEffect(() => {
     if (selectedUsers.length === 0) {
       setUserData(null);
@@ -133,13 +166,17 @@ const UserPermissionsEditor = () => {
     fetchUser();
   }, [selectedUsers]);
 
+  // -------------- Handlers --------------
+  const toggleGroup = (groupName) => {
+    setOpenGroups((prev) => ({ ...prev, [groupName]: !prev[groupName] }));
+  };
+
   const togglePermission = (perm) => {
     setUpdatedPermissions((prev) =>
       prev.includes(perm) ? prev.filter((p) => p !== perm) : [...prev, perm]
     );
   };
 
-  // When saving, update permissions for all selected users
   const handleSave = async () => {
     try {
       for (const option of selectedUsers) {
@@ -147,7 +184,7 @@ const UserPermissionsEditor = () => {
         const res = await fetch(`${BASE_URL}/${uid}/permissions`, {
           method: "PUT",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ permissions: updatedPermissions })
+          body: JSON.stringify({ permissions: updatedPermissions }),
         });
         if (!res.ok) throw new Error(`Failed to update permissions for user ${uid}`);
       }
@@ -158,18 +195,19 @@ const UserPermissionsEditor = () => {
     }
   };
 
+  // -------------- Access check --------------
   if (currentUser.role !== "Administrator") {
     return <div>Access denied. Only administrators can update permissions.</div>;
   }
 
-  // Container styling for dark/light mode
+  // -------------- Container styling --------------
   const containerStyle = {
     backgroundColor: darkMode ? "#1a202c" : "#ffffff",
     borderColor: darkMode ? "#4a5568" : "#e2e8f0",
-    color: darkMode ? "#ffffff" : "#1a202c"
+    color: darkMode ? "#ffffff" : "#1a202c",
   };
 
-  // Chip styling for permissions
+  // -------------- Chip styling --------------
   const getChipClasses = (perm) => {
     const enabled = updatedPermissions.includes(perm);
     return `cursor-pointer px-3 py-1 rounded-full text-sm transition-colors duration-200 ${
@@ -177,122 +215,138 @@ const UserPermissionsEditor = () => {
     }`;
   };
 
-  // All permission groups expanded by default
-  const [openGroups, setOpenGroups] = useState(() => {
-    const init = {};
-    Object.keys(PERMISSIONS_GROUPS).forEach((group) => {
-      init[group] = true;
-    });
-    return init;
-  });
-
-  const toggleGroup = (groupName) => {
-    setOpenGroups((prev) => ({ ...prev, [groupName]: !prev[groupName] }));
-  };
-
+  // -------------- Render --------------
   return (
-    <div style={containerStyle} className="p-4 rounded-xl shadow-md border">
-      {/* Removed the heading "Edit Permissions for ..." as requested */}
+    <div
+      style={containerStyle}
+      className="rounded-xl shadow-md border min-h-screen transition-all duration-500"
+    >
+      {/* Replacing minimal header with the same style from UserManagement */}
+      <header
+        className={`${darkMode ? "bg-gray-800 text-white border-gray-700" : "bg-white text-gray-900 border-gray-200"}
+          flex justify-between items-center p-6 shadow-lg border`}
+      >
+        <div className="text-xl font-semibold">User Permissions</div>
+        <div className="flex items-center space-x-4">
+          <div className="flex flex-col items-end">
+            <span className={`${darkMode ? "text-yellow-600" : "text-gray-500"} text-sm`}>
+              {currentUser.role}
+            </span>
+            <span className="text-xs">{currentUser.name}</span>
+          </div>
+          <DarkModeToggleWrapper />
+        </div>
+      </header>
 
-      {/* Multi-select dropdown using react-select */}
-      <div className="mb-6">
-        <label className="block font-semibold mb-2">Select user(s):</label>
-        <Select
-          options={allUsers}
-          value={selectedUsers}
-          onChange={setSelectedUsers}
-          isMulti
-          closeMenuOnSelect={false}
-          placeholder="Search and select users..."
-          classNamePrefix="react-select"
-          styles={{
-            control: (provided) => ({
-              ...provided,
-              backgroundColor: darkMode ? "#2d3748" : "#ffffff",
-              borderColor: darkMode ? "#4a5568" : "#e2e8f0",
-              color: darkMode ? "#ffffff" : "#1a202c"
-            }),
-            menu: (provided) => ({
-              ...provided,
-              backgroundColor: darkMode ? "#2d3748" : "#ffffff"
-            }),
-            option: (provided, state) => ({
-              ...provided,
-              backgroundColor: state.isFocused
-                ? darkMode
-                  ? "#4a5568"
-                  : "#e2e8f0"
-                : darkMode
-                ? "#2d3748"
-                : "#ffffff",
-              color: darkMode ? "#ffffff" : "#1a202c"
-            }),
-            dropdownIndicator: (provided) => ({
-              ...provided,
-              color: darkMode ? "#ffffff" : "#1a202c",
-              transition: "color 0.2s ease",
-              ":hover": {
-                color: "#4299e1"
-              }
-            }),
-            multiValue: (provided) => ({
-              ...provided,
-              backgroundColor: darkMode ? "#4a5568" : "#e2e8f0"
-            }),
-            multiValueLabel: (provided) => ({
-              ...provided,
-              color: darkMode ? "#ffffff" : "#1a202c"
-            }),
-            multiValueRemove: (provided) => ({
-              ...provided,
-              color: darkMode ? "#ffffff" : "#1a202c",
-              ":hover": {
-                background: "linear-gradient(90deg, #e53e3e, #c53030)",
-                color: "#ffffff"
-              }
-            }),
-            singleValue: (provided) => ({
-              ...provided,
-              color: darkMode ? "#ffffff" : "#1a202c"
-            })
-          }}
-        />
+      <div className="p-6">
+        {/* Select user(s) block */}
+        <div className="mb-6">
+          <label className="block font-semibold mb-2">Select user(s):</label>
+          <Select
+            options={allUsers}
+            value={selectedUsers}
+            onChange={setSelectedUsers}
+            isMulti
+            closeMenuOnSelect={false}
+            placeholder="Search and select users..."
+            classNamePrefix="react-select"
+            styles={{
+              control: (provided) => ({
+                ...provided,
+                backgroundColor: darkMode ? "#2d3748" : "#ffffff",
+                borderColor: darkMode ? "#4a5568" : "#e2e8f0",
+                color: darkMode ? "#ffffff" : "#1a202c",
+              }),
+              menu: (provided) => ({
+                ...provided,
+                backgroundColor: darkMode ? "#2d3748" : "#ffffff",
+              }),
+              option: (provided, state) => ({
+                ...provided,
+                backgroundColor: state.isFocused
+                  ? darkMode
+                    ? "#4a5568"
+                    : "#e2e8f0"
+                  : darkMode
+                  ? "#2d3748"
+                  : "#ffffff",
+                color: darkMode ? "#ffffff" : "#1a202c",
+              }),
+              dropdownIndicator: (provided) => ({
+                ...provided,
+                color: darkMode ? "#ffffff" : "#1a202c",
+                transition: "color 0.2s ease",
+                ":hover": {
+                  color: "#4299e1",
+                },
+              }),
+              multiValue: (provided) => ({
+                ...provided,
+                backgroundColor: darkMode ? "#4a5568" : "#e2e8f0",
+              }),
+              multiValueLabel: (provided) => ({
+                ...provided,
+                color: darkMode ? "#ffffff" : "#1a202c",
+              }),
+              multiValueRemove: (provided) => ({
+                ...provided,
+                color: darkMode ? "#ffffff" : "#1a202c",
+                ":hover": {
+                  background: "linear-gradient(90deg, #e53e3e, #c53030)",
+                  color: "#ffffff",
+                },
+              }),
+              singleValue: (provided) => ({
+                ...provided,
+                color: darkMode ? "#ffffff" : "#1a202c",
+              }),
+              // -------------- Clear indicator: turn red on hover --------------
+              clearIndicator: (provided) => ({
+                ...provided,
+                color: darkMode ? "#ffffff" : "#1a202c",
+                ":hover": {
+                  color: "#ff0000", // red on hover
+                },
+              }),
+            }}
+          />
+        </div>
+
+        {selectedUsers.length > 0 && userData && (
+          <>
+            {Object.entries(PERMISSIONS_GROUPS).map(([groupName, perms]) => (
+              <div key={groupName} className="mb-6">
+                <h4
+                  className="text-lg font-semibold mb-2 cursor-pointer"
+                  onClick={() => toggleGroup(groupName)}
+                >
+                  {groupName} {openGroups[groupName] ? "▼" : "▶"}
+                </h4>
+                {openGroups[groupName] && (
+                  <div className="flex flex-wrap gap-2">
+                    {perms.map((perm) => (
+                      <div
+                        key={perm}
+                        className={getChipClasses(perm)}
+                        onClick={() => togglePermission(perm)}
+                        title={perm}
+                      >
+                        {PERMISSION_LABELS[perm] || perm}
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            ))}
+            <button
+              onClick={handleSave}
+              className="mt-4 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700"
+            >
+              Save Permissions
+            </button>
+          </>
+        )}
       </div>
-
-      {selectedUsers.length > 0 && userData && (
-        <>
-          {Object.entries(PERMISSIONS_GROUPS).map(([groupName, perms]) => (
-            <div key={groupName} className="mb-6">
-              <h4
-                className="text-lg font-semibold mb-2 cursor-pointer"
-                onClick={() => toggleGroup(groupName)}
-              >
-                {groupName} {openGroups[groupName] ? "▼" : "▶"}
-              </h4>
-              {openGroups[groupName] && (
-                <div className="flex flex-wrap gap-2">
-                  {perms.map((perm) => (
-                    <div
-                      key={perm}
-                      className={getChipClasses(perm)}
-                      onClick={() => togglePermission(perm)}
-                      title={perm} // Tooltip shows original permission key.
-                    >
-                      {PERMISSION_LABELS[perm] || perm}
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
-          ))}
-          <button
-            onClick={handleSave}
-            className="mt-4 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700"
-          >
-            Save Permissions
-          </button>
-        </>
-      )}
     </div>
   );
 };

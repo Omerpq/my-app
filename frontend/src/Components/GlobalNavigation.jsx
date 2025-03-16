@@ -4,11 +4,11 @@ import { NavLink, useNavigate } from "react-router-dom";
 import { useTheme } from "../context/ThemeContext";
 import { useAuth } from "../context/AuthContext";
 import {
-  FaTachometerAlt,
+  FaChartPie,
   FaUser,
   FaBoxes,
   FaCog,
-  FaChartPie,
+  FaUserShield,
   FaCalendarAlt,
   FaBell,
   FaEnvelope,
@@ -17,15 +17,15 @@ import {
 } from "react-icons/fa";
 
 const navItems = [
-  { name: "Dashboard", icon: <FaTachometerAlt className="text-orange-400" />, route: "/dashboard" },
-  { name: "User Management", icon: <FaUser className="text-green-500" />, route: "/users" },
-  { name: "Inventory Management", icon: <FaBoxes className="text-red-500" />, route: "/inventory" },
-  { name: "Project Management", icon: <FaClipboardList className="text-blue-500" />, route: "/projects" },
-  { name: "Settings", icon: <FaCog className="text-yellow-500" />, route: "/settings" },
-  { name: "Analytics", icon: <FaChartPie className="text-purple-500" />, route: "/analytics" },
-  { name: "Calendar", icon: <FaCalendarAlt className="text-blue-500" />, route: "/calendar" },
-  { name: "Notifications", icon: <FaBell className="text-pink-500" />, route: "/notifications" },
-  { name: "Messages", icon: <FaEnvelope className="text-teal-500" />, route: "/messages" },
+  { name: "Business Analytics", icon: <FaChartPie className="text-red-500" />, route: "/analytics" },
+  { name: "User Management", icon: <FaUser className="text-blue-500" />, route: "/users" },
+  { name: "User Permissions", icon: <FaUserShield className="text-purple-500" />, route: "/user-permissions" },
+  { name: "Inventory Management", icon: <FaBoxes className="text-green-500" />, route: "/inventory" },
+  { name: "Project Management", icon: <FaClipboardList className="text-orange-500" />, route: "/projects" },
+  { name: "Settings", icon: <FaCog className="text-teal-500" />, route: "/settings" },
+  { name: "Calendar", icon: <FaCalendarAlt className="text-pink-500" />, route: "/calendar" },
+  { name: "Notifications", icon: <FaBell className="text-yellow-500" />, route: "/notifications" },
+  { name: "Messages", icon: <FaEnvelope className="text-indigo-500" />, route: "/messages" },
 ];
 
 const HamburgerIcon = () => (
@@ -42,16 +42,18 @@ const GlobalNavigation = () => {
   const [isOpen, setIsOpen] = useState(true);
   const navigate = useNavigate();
 
-  // Minimal changes made here:
-  // For Dashboard, User Management, Project Management, and Inventory Management,
-  // we now check only for the main permission.
+  // Updated filtering: For administrators, always include Business Analytics and User Permissions.
   const filteredNavItems = navItems.filter((item) => {
-    if (item.name === "Dashboard") {
-      return currentUser && (currentUser.role === "Administrator" || (currentUser.permissions && currentUser.permissions.includes("canAccessDashboard")));
+    if (item.name === "Business Analytics") {
+      if (currentUser && currentUser.role === "Administrator") return true;
+      return currentUser && currentUser.permissions && currentUser.permissions.includes("canAccessDashboard");
     }
-    
     if (item.name === "User Management") {
       return currentUser && currentUser.permissions && currentUser.permissions.includes("canAccessUserManagement");
+    }
+    if (item.name === "User Permissions") {
+      // Admins always have all permissions by default.
+      return currentUser && currentUser.role === "Administrator";
     }
     if (item.name === "Project Management") {
       return currentUser && currentUser.permissions && currentUser.permissions.includes("canAccessProjectManagement");
@@ -88,19 +90,15 @@ const GlobalNavigation = () => {
       >
         <div className={`flex items-center ${isOpen ? "justify-between" : "justify-center"} mb-6 transition-all duration-200`}>
           {isOpen && (
-            <span
-              style={{
-                backgroundSize: "1000% auto",
-                backgroundRepeat: "repeat-x",
-              }}
-              className={`
-                text-md tracking-wide drop-shadow-lg
-                bg-gradient-to-r from-red-500 to-blue-500 text-transparent bg-clip-text animate-gradient
-              `}
-            >
-              FieldOps
+            // --- Removed the text gradient classes. Replaced with a pill containing a glow. ---
+            <span className="relative inline-block px-3 py-1 font-semibold text-white rounded-full overflow-hidden">
+              {/* Actual text */}
+              <span className="relative z-10">FieldOps</span>
+              {/* Glow behind the pill */}
+              <span className="absolute inset-0 rounded-full bg-gradient-to-r from-red-500 to-blue-500 opacity-70 blur-md animate-pulse" />
             </span>
           )}
+
           <button
             onClick={() => setIsOpen(!isOpen)}
             className={`

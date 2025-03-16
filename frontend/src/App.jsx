@@ -9,7 +9,7 @@ import ProjectManagement from "./ProjectManagement";
 import ForgotPassword from "./ForgotPassword";
 import ResetPassword from "./ResetPassword";
 import ProtectedRoute from "./ProtectedRoute";
-import Layout from "./layout";
+import Layout from "./Layout";
 import { LanguageProvider } from "./context/LanguageContext";
 import FormSelection from "./Components/FormSelection";
 import DynamicForm from "./Components/DynamicForm";
@@ -29,12 +29,11 @@ import ProjectSummary from "./Components/ProjectSummary";
 // Splash screen component
 import SplashScreen from "./Components/SplashScreen";
 
+// Import the UserPermissionsEditor for the new route
+import UserPermissionsEditor from "./UserPermissionsEditor";
+
 // --- LandingRedirect Component ---
-// This component checks the logged-in user’s permissions and redirects accordingly.
 const LandingRedirect = () => {
-  // Here we assume the ProtectedRoute (or Layout) already ensured that "user" is available.
-  // In a real app you might use a custom hook (e.g. useAuth) to get the current user.
-  // For simplicity, we assume the user object is stored in localStorage via your auth flow.
   const storedUser = localStorage.getItem("user");
   const user = storedUser ? JSON.parse(storedUser) : null;
 
@@ -67,7 +66,6 @@ const App = () => {
       <Router>
         <Routes>
           {/* Public Routes */}
-          {/* Instead of redirecting "/" to login immediately, we use LandingRedirect */}
           <Route path="/" element={<LandingRedirect />} />
           <Route
             path="/login"
@@ -84,8 +82,9 @@ const App = () => {
           {/* Protected Routes */}
           <Route element={<ProtectedRoute />}>
             <Route element={<Layout />}>
-              {/* The LandingRedirect now handles "/" */}
               <Route path="/dashboard" element={<Dashboard />} />
+              <Route path="/analytics" element={<Dashboard />} />
+              <Route path="/user-permissions" element={<UserPermissionsEditor />} />
               <Route path="/users" element={<UserManagement />} />
               <Route path="/inventory" element={<InventoryManagement />} />
               <Route path="/settings" element={<BTForm />} />

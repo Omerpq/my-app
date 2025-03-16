@@ -643,11 +643,12 @@ const PendingRequestsModal = ({ isOpen, onClose, darkMode }) => {
 // --------------------------
 const ApprovedRequestsModal = ({ isOpen, onClose, darkMode }) => {
   const [requests, setRequests] = useState([]);
+
   useEffect(() => {
     if (isOpen) {
       document.body.style.overflow = "hidden";
       fetch("https://my-app-1-uzea.onrender.com/api/projects/request_stock/approved")
-      .then((res) => res.json())
+        .then((res) => res.json())
         .then((data) => setRequests(Array.isArray(data) ? data : []))
         .catch((err) => console.error("Failed to fetch approved requests", err));
     } else {
@@ -657,14 +658,24 @@ const ApprovedRequestsModal = ({ isOpen, onClose, darkMode }) => {
       document.body.style.overflow = "auto";
     };
   }, [isOpen]);
+
   if (!isOpen) return null;
-  const keyGradient = getKeyGradient(darkMode);
+
+  // Use the same gradient helper from your code
+  const keyGradient = darkMode
+    ? "bg-gradient-to-r from-green-400 to-blue-500 bg-clip-text text-transparent"
+    : "bg-gradient-to-r from-blue-800 to-blue-600 bg-clip-text text-transparent";
+
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
+    // 1) Changed "items-center" to "items-start" below:
+    <div className="fixed inset-0 z-50 flex items-start justify-center bg-black bg-opacity-50">
+      {/* 2) Added `mt-8`, `max-h-[90vh]`, and `overflow-auto` to allow scrolling */}
       <div
-        className={`${
-          darkMode ? "bg-gray-800 text-white" : "bg-white text-black"
-        } rounded-lg shadow-lg max-w-4xl w-full p-6`}
+        className={`
+          ${darkMode ? "bg-gray-800 text-white" : "bg-white text-black"} 
+          rounded-lg shadow-lg max-w-4xl w-full p-6 mt-8 
+          max-h-[90vh] overflow-auto
+        `}
       >
         <div className="flex justify-between items-center">
           <h3 className="text-xl font-bold">Approved Requests</h3>

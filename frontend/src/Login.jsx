@@ -8,8 +8,6 @@ import { useLanguage } from "./context/LanguageContext"; // Use global language 
 import "./Login.css";
 import EvolvexLogo from "./images/Evolvex_logo.png";
 
-
-
 export default function Login() {
   const { darkMode, toggleTheme } = useTheme();
   const { login: authLogin } = useAuth();
@@ -74,9 +72,8 @@ export default function Login() {
         });
         const data = await response.json();
         if (!response.ok) {
-          setPasswordError(
-            data.error || (french ? "Échec de la connexion" : "Login failed")
-          );
+          console.error("Login failed:", data);
+          setPasswordError(data.error || (french ? "Échec de la connexion" : "Login failed"));
         } else {
           localStorage.setItem("token", data.token);
           localStorage.setItem("user", JSON.stringify(data.user));
@@ -145,8 +142,7 @@ export default function Login() {
 
         {/* Logo */}
         <div className="flex justify-center">
-        <img src={EvolvexLogo} alt="Logo" className="w-28 mb-0" />
-
+          <img src={EvolvexLogo} alt="Logo" className="w-28 mb-0" />
         </div>
 
         {/* Form Title */}

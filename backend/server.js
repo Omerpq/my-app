@@ -923,12 +923,12 @@ app.put("/api/users/:id/permissions", async (req, res) => {
 // IMPORTANT: Mount API routes before static file serving
 // If you serve static files (e.g., in production), mount them after the API routes.
 if (process.env.NODE_ENV === "production") {
-  app.use(express.static("build"));
-  app.get("*", (req, res) => {
-    res.sendFile(path.join(__dirname, "build", "index.html"));
-  });
+//  app.use(express.static("build"));
+  //app.get("*", (req, res) => {
+    //res.sendFile(path.join(__dirname, "build", "index.html"));
+  //});
 } else {
-  // Optionally, add a catch-all for API endpoints in development
+  //// Optionally, add a catch-all for API endpoints in development
   //app.use("/api", (req, res) => {
    // res.status(404).json({ error: "API endpoint not found" });
   //});

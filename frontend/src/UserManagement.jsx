@@ -69,7 +69,7 @@ const UserManagement = () => {
     return <Navigate to="/login" replace />;
   }
 
-  // Determine granular permissions from currentUser.permissions
+  // Granular permissions
   const canView = currentUser.permissions?.includes("canViewUsers");
   const canCreate = currentUser.permissions?.includes("canCreateUser");
   const canEdit = currentUser.permissions?.includes("canEditUser");
@@ -300,165 +300,306 @@ const UserManagement = () => {
         </nav>
       )}
 
-      {/* Main area: Render the grid only if "canViewUsers" permission is present */}
+      {/* Main area */}
       {canView && (
         <main className="p-6 transition-all duration-500">
-          <div className="overflow-x-auto">
-            <table className="w-full table-auto">
-              <thead>
-                <tr>
-                  <th className={`px-4 py-2 text-left ${darkMode ? "text-white" : "text-gray-900"}`}>
-                    <input
-                      type="checkbox"
-                      onChange={handleSelectAll}
-                      checked={selectedUsers.length === users.length && users.length > 0}
-                    />
-                  </th>
-                  <th onClick={() => handleSort("name")} className={`px-4 py-2 text-left cursor-pointer ${darkMode ? "text-white" : "text-gray-900"}`}>
-                    Name{getSortIcon("name")}
-                  </th>
-                  <th onClick={() => handleSort("email")} className={`px-4 py-2 text-left cursor-pointer ${darkMode ? "text-white" : "text-gray-900"}`}>
-                    Email{getSortIcon("email")}
-                  </th>
-                  <th onClick={() => handleSort("role")} className={`px-4 py-2 text-left cursor-pointer ${darkMode ? "text-white" : "text-gray-900"}`}>
-                    Role{getSortIcon("role")}
-                  </th>
-                  <th onClick={() => handleSort("status")} className={`px-4 py-2 text-left cursor-pointer ${darkMode ? "text-white" : "text-gray-900"}`}>
-                    Status{getSortIcon("status")}
-                  </th>
-                  <th className={`px-4 py-2 text-left ${darkMode ? "text-white" : "text-gray-900"}`}>Actions</th>
-                </tr>
-              </thead>
-              <tbody>
-                {sortedUsers.length === 0 ? (
+          {/* Create User Form Container */}
+          {showAddForm && canCreate && (
+            <div
+              className="p-6 rounded-xl border transition-shadow duration-300 shadow-2xl mb-6 max-w-md mx-auto"
+              style={{
+                backgroundColor: darkMode ? "#1a202c" : "#f7fafc",
+                borderColor: darkMode ? "#4a5568" : "#e2e8f0",
+              }}
+            >
+              <form onSubmit={handleAddUser}>
+                <h2 className="text-2xl font-semibold text-center mb-4">Create new user</h2>
+                {/* Name Field */}
+                <div className="mb-4">
+                  <label className={`block font-semibold ${darkMode ? "text-gray-300" : "text-gray-700"}`}>
+                    Name <span className="text-red-500">*</span>
+                  </label>
+                  <input
+                    type="text"
+                    placeholder="Name"
+                    value={newUser.name}
+                    onChange={(e) => setNewUser({ ...newUser, name: e.target.value })}
+                    required
+                    disabled={isSubmitting || formLocked}
+                    className={`w-full px-4 py-2 mt-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400 transition-all duration-500 ${
+                      darkMode ? "bg-gray-700 text-white border-gray-600" : "bg-white text-gray-900 border-gray-300 shadow-inner"
+                    } focus:border-blue-500`}
+                  />
+                </div>
+                {/* Email Field */}
+                <div className="mb-4">
+                  <label className={`block font-semibold ${darkMode ? "text-gray-300" : "text-gray-700"}`}>
+                    Email <span className="text-red-500">*</span>
+                  </label>
+                  <input
+                    type="email"
+                    placeholder="Email"
+                    value={newUser.email}
+                    onChange={(e) => setNewUser({ ...newUser, email: e.target.value })}
+                    required
+                    disabled={isSubmitting || formLocked}
+                    className={`w-full px-4 py-2 mt-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400 transition-all duration-500 ${
+                      darkMode ? "bg-gray-700 text-white border-gray-600" : "bg-white text-gray-900 border-gray-300 shadow-inner"
+                    } focus:border-blue-500`}
+                  />
+                </div>
+                {/* Role Field */}
+                <div className="mb-4">
+                  <label className={`block font-semibold ${darkMode ? "text-gray-300" : "text-gray-700"}`}>
+                    Role <span className="text-red-500">*</span>
+                  </label>
+                  <select
+                    value={newUser.role}
+                    onChange={(e) => setNewUser({ ...newUser, role: e.target.value })}
+                    required
+                    disabled={isSubmitting || formLocked}
+                    className={`w-full px-4 py-2 mt-2 border rounded-lg focus:outline-none transition-all duration-500 ${
+                      darkMode ? "bg-gray-700 text-white border-gray-600" : "bg-white text-gray-900 border-gray-300 shadow-inner"
+                    } focus:border-blue-500`}
+                  >
+                    <option value="">Select role</option>
+                    <option value="Administrator">Administrator</option>
+                    <option value="Manager">Manager</option>
+                    <option value="Contractor">Contractor</option>
+                    <option value="InventoryManager">Inventor Manager</option>
+                    <option value="SiteWorker">Site Worker</option>
+                    <option value="Driver">Driver</option>
+                  </select>
+                </div>
+                {/* Status Field */}
+                <div className="mb-4">
+                  <label className={`block font-semibold ${darkMode ? "text-gray-300" : "text-gray-700"}`}>
+                    Status <span className="text-red-500">*</span>
+                  </label>
+                  <select
+                    value={newUser.status}
+                    onChange={(e) => setNewUser({ ...newUser, status: e.target.value })}
+                    required
+                    disabled={isSubmitting || formLocked}
+                    className={`w-full px-4 py-2 mt-2 border rounded-lg focus:outline-none transition-all duration-500 ${
+                      darkMode ? "bg-gray-700 text-white border-gray-600" : "bg-white text-gray-900 border-gray-300 shadow-inner"
+                    } focus:border-blue-500`}
+                  >
+                    <option value="">Select status</option>
+                    <option value="Active">Active</option>
+                    <option value="Inactive">Inactive</option>
+                  </select>
+                </div>
+                <button
+                  type="submit"
+                  disabled={isCreateDisabled || isSubmitting || formLocked}
+                  className={`w-full py-2 mt-4 text-white rounded-lg shadow-md transition-all duration-500 ${
+                    isCreateDisabled || isSubmitting || formLocked
+                      ? "bg-blue-300 cursor-not-allowed"
+                      : "bg-blue-500 hover:bg-blue-600 focus:bg-blue-600"
+                  } focus:outline-none`}
+                >
+                  Create and send account info
+                </button>
+                {isSubmitting && (
+                  <div className="flex items-center mt-2">
+                    <svg className="animate-spin h-5 w-5 text-gray-600 mr-2" viewBox="0 0 24 24">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"></path>
+                    </svg>
+                    <span className="text-gray-600">Processing...</span>
+                  </div>
+                )}
+                {infoMessage && (
+                  <div className="mt-2">
+                    <p className="text-left text-green-500">{infoMessage}</p>
+                    <p
+                      className="text-left text-blue-500 cursor-pointer"
+                      onClick={() => {
+                        setInfoMessage("");
+                        setNewUser(initialNewUser);
+                        setFormLocked(false);
+                        window.scrollTo({ top: 0, behavior: "smooth" });
+                      }}
+                    >
+                      Add another user
+                    </p>
+                  </div>
+                )}
+                {formError && (
+                  <div className="mt-2">
+                    <p className="text-left text-red-700">{formError}</p>
+                  </div>
+                )}
+              </form>
+            </div>
+          )}
+
+          {/* User Grid Container */}
+          <div
+            className="p-6 rounded-xl border transition-shadow duration-300 shadow-2xl max-w-4xl mx-auto"
+            style={{
+              backgroundColor: darkMode ? "#1a202c" : "#f7fafc",
+              borderColor: darkMode ? "#4a5568" : "#e2e8f0",
+            }}
+          >
+            <div className="overflow-x-auto">
+              <table className="w-full table-auto">
+                <thead>
                   <tr>
-                    <td colSpan="6" className="text-center p-4">
-                      No users found.
-                    </td>
+                    <th className={`px-4 py-2 text-left ${darkMode ? "text-white" : "text-gray-900"}`}>
+                      <input
+                        type="checkbox"
+                        onChange={handleSelectAll}
+                        checked={selectedUsers.length === users.length && users.length > 0}
+                      />
+                    </th>
+                    <th onClick={() => handleSort("name")} className={`px-4 py-2 text-left cursor-pointer ${darkMode ? "text-white" : "text-gray-900"}`}>
+                      Name{getSortIcon("name")}
+                    </th>
+                    <th onClick={() => handleSort("email")} className={`px-4 py-2 text-left cursor-pointer ${darkMode ? "text-white" : "text-gray-900"}`}>
+                      Email{getSortIcon("email")}
+                    </th>
+                    <th onClick={() => handleSort("role")} className={`px-4 py-2 text-left cursor-pointer ${darkMode ? "text-white" : "text-gray-900"}`}>
+                      Role{getSortIcon("role")}
+                    </th>
+                    <th onClick={() => handleSort("status")} className={`px-4 py-2 text-left cursor-pointer ${darkMode ? "text-white" : "text-gray-900"}`}>
+                      Status{getSortIcon("status")}
+                    </th>
+                    <th className={`px-4 py-2 text-left ${darkMode ? "text-white" : "text-gray-900"}`}>Actions</th>
                   </tr>
-                ) : (
-                  sortedUsers.map((user) => (
-                    <tr key={user.id} className={`border-t ${darkMode ? "border-gray-700" : "border-gray-200"}`}>
-                      <td className={`px-4 py-2 break-words ${darkMode ? "text-white" : "text-gray-900"}`}>
-                        <input
-                          type="checkbox"
-                          checked={selectedUsers.includes(user.id)}
-                          onChange={() => handleCheckboxChange(user.id)}
-                        />
-                      </td>
-                      <td className="px-4 py-2 break-words">
-                        {editingUserId === user.id ? (
-                          <input
-                            type="text"
-                            name="name"
-                            value={editingUserData.name}
-                            onChange={handleEditChange}
-                            className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400 transition-all duration-500 bg-white text-gray-900 border-gray-300 shadow-inner dark:bg-gray-700 dark:text-white dark:border-gray-600 focus:border-blue-500"
-                          />
-                        ) : (
-                          <span className={`${darkMode ? "text-white" : "text-gray-900"}`}>{user.name}</span>
-                        )}
-                      </td>
-                      <td className="px-4 py-2 break-words">
-                        {editingUserId === user.id ? (
-                          <input
-                            type="email"
-                            name="email"
-                            value={editingUserData.email}
-                            onChange={handleEditChange}
-                            className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400 transition-all duration-500 bg-white text-gray-900 border-gray-300 shadow-inner dark:bg-gray-700 dark:text-white dark:border-gray-600 focus:border-blue-500"
-                          />
-                        ) : (
-                          <span className={`${darkMode ? "text-white" : "text-gray-900"}`}>{user.email}</span>
-                        )}
-                      </td>
-                      <td className="px-4 py-2 break-words">
-                        {editingUserId === user.id ? (
-                          <select
-                            name="role"
-                            value={editingUserData.role}
-                            onChange={handleEditChange}
-                            className="w-full px-4 py-2 border rounded-lg focus:outline-none transition-all duration-500 bg-white text-gray-900 border-gray-300 shadow-inner dark:bg-gray-700 dark:text-white dark:border-gray-600 focus:border-blue-500"
-                          >
-                            <option value="">Select role</option>
-                            <option value="Administrator">Administrator</option>
-                            <option value="InventoryManager">Inventor Manager</option>
-                            <option value="SiteWorker">Site Worker</option>
-                            <option value="Driver">Driver</option>
-                          </select>
-                        ) : (
-                          <span className={`${darkMode ? "text-white" : "text-gray-900"}`}>{user.role}</span>
-                        )}
-                      </td>
-                      <td className="px-4 py-2 break-words">
-                        {editingUserId === user.id ? (
-                          <select
-                            name="status"
-                            value={editingUserData.status}
-                            onChange={handleEditChange}
-                            className="w-full px-4 py-2 border rounded-lg focus:outline-none transition-all duration-500 bg-white text-gray-900 border-gray-300 shadow-inner dark:bg-gray-700 dark:text-white dark:border-gray-600 focus:border-blue-500"
-                          >
-                            <option value="">Select status</option>
-                            <option value="Active">Active</option>
-                            <option value="Inactive">Inactive</option>
-                          </select>
-                        ) : (
-                          <span className={`${darkMode ? "text-white" : "text-gray-900"}`}>{user.status}</span>
-                        )}
-                      </td>
-                      <td className="px-4 py-2 break-words">
-                        <div className="flex space-x-2">
-                          {editingUserId === user.id ? (
-                            <>
-                              {currentUser.permissions && currentUser.permissions.includes("canEditUser") && (
-                                <>
-                                  <button
-                                    onClick={() => handleEditSave(user.id)}
-                                    className="px-4 py-2 rounded-lg bg-blue-500 text-white hover:bg-blue-600 transition-all duration-500"
-                                  >
-                                    Save
-                                  </button>
-                                  <button
-                                    onClick={handleEditCancel}
-                                    className="px-4 py-2 rounded-lg bg-gray-500 text-white hover:bg-gray-600 transition-all duration-500"
-                                  >
-                                    Cancel
-                                  </button>
-                                </>
-                              )}
-                            </>
-                          ) : (
-                            <>
-                              {currentUser.permissions && currentUser.permissions.includes("canEditUser") && (
-                                <button
-                                  onClick={() => handleEditClick(user)}
-                                  className="px-4 py-2 rounded-lg bg-blue-500 text-white hover:bg-blue-600 transition-all duration-500"
-                                >
-                                  Edit
-                                </button>
-                              )}
-                              {currentUser.permissions && currentUser.permissions.includes("canDeleteUser") && (
-                                <button
-                                  onClick={() => handleDeleteUser(user.id)}
-                                  disabled={selectedUsers.length > 0}
-                                  className={`px-4 py-2 rounded-lg transition-all duration-500 ${
-                                    selectedUsers.length > 0
-                                      ? "bg-red-300 text-red-200 cursor-not-allowed"
-                                      : "bg-red-600 text-white hover:bg-red-700"
-                                  }`}
-                                >
-                                  Delete
-                                </button>
-                              )}
-                            </>
-                          )}
-                        </div>
+                </thead>
+                <tbody>
+                  {sortedUsers.length === 0 ? (
+                    <tr>
+                      <td colSpan="6" className="text-center p-4">
+                        No users found.
                       </td>
                     </tr>
-                  ))
-                )}
-              </tbody>
-            </table>
+                  ) : (
+                    sortedUsers.map((user) => (
+                      <tr key={user.id} className={`border-t ${darkMode ? "border-gray-700" : "border-gray-200"}`}>
+                        <td className={`px-4 py-2 break-words ${darkMode ? "text-white" : "text-gray-900"}`}>
+                          <input
+                            type="checkbox"
+                            checked={selectedUsers.includes(user.id)}
+                            onChange={() => handleCheckboxChange(user.id)}
+                          />
+                        </td>
+                        <td className="px-4 py-2 break-words">
+                          {editingUserId === user.id ? (
+                            <input
+                              type="text"
+                              name="name"
+                              value={editingUserData.name}
+                              onChange={handleEditChange}
+                              className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400 transition-all duration-500 bg-white text-gray-900 border-gray-300 shadow-inner dark:bg-gray-700 dark:text-white dark:border-gray-600 focus:border-blue-500"
+                            />
+                          ) : (
+                            <span className={`${darkMode ? "text-white" : "text-gray-900"}`}>{user.name}</span>
+                          )}
+                        </td>
+                        <td className="px-4 py-2 break-words">
+                          {editingUserId === user.id ? (
+                            <input
+                              type="email"
+                              name="email"
+                              value={editingUserData.email}
+                              onChange={handleEditChange}
+                              className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400 transition-all duration-500 bg-white text-gray-900 border-gray-300 shadow-inner dark:bg-gray-700 dark:text-white dark:border-gray-600 focus:border-blue-500"
+                            />
+                          ) : (
+                            <span className={`${darkMode ? "text-white" : "text-gray-900"}`}>{user.email}</span>
+                          )}
+                        </td>
+                        <td className="px-4 py-2 break-words">
+                          {editingUserId === user.id ? (
+                            <select
+                              name="role"
+                              value={editingUserData.role}
+                              onChange={handleEditChange}
+                              className="w-full px-4 py-2 border rounded-lg focus:outline-none transition-all duration-500 bg-white text-gray-900 border-gray-300 shadow-inner dark:bg-gray-700 dark:text-white dark:border-gray-600 focus:border-blue-500"
+                            >
+                              <option value="">Select role</option>
+                              <option value="Administrator">Administrator</option>
+                              <option value="InventoryManager">Inventor Manager</option>
+                              <option value="SiteWorker">Site Worker</option>
+                              <option value="Driver">Driver</option>
+                            </select>
+                          ) : (
+                            <span className={`${darkMode ? "text-white" : "text-gray-900"}`}>{user.role}</span>
+                          )}
+                        </td>
+                        <td className="px-4 py-2 break-words">
+                          {editingUserId === user.id ? (
+                            <select
+                              name="status"
+                              value={editingUserData.status}
+                              onChange={handleEditChange}
+                              className="w-full px-4 py-2 border rounded-lg focus:outline-none transition-all duration-500 bg-white text-gray-900 border-gray-300 shadow-inner dark:bg-gray-700 dark:text-white dark:border-gray-600 focus:border-blue-500"
+                            >
+                              <option value="">Select status</option>
+                              <option value="Active">Active</option>
+                              <option value="Inactive">Inactive</option>
+                            </select>
+                          ) : (
+                            <span className={`${darkMode ? "text-white" : "text-gray-900"}`}>{user.status}</span>
+                          )}
+                        </td>
+                        <td className="px-4 py-2 break-words">
+                          <div className="flex space-x-2">
+                            {editingUserId === user.id ? (
+                              <>
+                                {canEdit && (
+                                  <>
+                                    <button
+                                      onClick={() => handleEditSave(user.id)}
+                                      className="px-4 py-2 rounded-lg bg-blue-500 text-white hover:bg-blue-600 transition-all duration-500"
+                                    >
+                                      Save
+                                    </button>
+                                    <button
+                                      onClick={handleEditCancel}
+                                      className="px-4 py-2 rounded-lg bg-gray-500 text-white hover:bg-gray-600 transition-all duration-500"
+                                    >
+                                      Cancel
+                                    </button>
+                                  </>
+                                )}
+                              </>
+                            ) : (
+                              <>
+                                {canEdit && (
+                                  <button
+                                    onClick={() => handleEditClick(user)}
+                                    className="px-4 py-2 rounded-lg bg-blue-500 text-white hover:bg-blue-600 transition-all duration-500"
+                                  >
+                                    Edit
+                                  </button>
+                                )}
+                                {canDelete && (
+                                  <button
+                                    onClick={() => handleDeleteUser(user.id)}
+                                    disabled={selectedUsers.length > 0}
+                                    className={`px-4 py-2 rounded-lg transition-all duration-500 ${
+                                      selectedUsers.length > 0
+                                        ? "bg-red-300 text-red-200 cursor-not-allowed"
+                                        : "bg-red-600 text-white hover:bg-red-700"
+                                    }`}
+                                  >
+                                    Delete
+                                  </button>
+                                )}
+                              </>
+                            )}
+                          </div>
+                        </td>
+                      </tr>
+                    ))
+                  )}
+                </tbody>
+              </table>
+            </div>
           </div>
         </main>
       )}

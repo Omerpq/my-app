@@ -4,33 +4,8 @@ console.log("DATABASE_URL:", process.env.DATABASE_URL);
 
 const express = require("express");
 const app = express();
-const path = require("path"); // Added for static file serving if needed
+const path = require("path");
 
-
-// DB Connection for render
-const pool = require('./db.js'); // import the pool
-
-app.get('/test', async (req, res) => {
-  try {
-    const result = await pool.query('SELECT NOW()');
-    res.json({ time: result.rows[0].now });
-  } catch (error) {
-    console.error(error);
-    res.status(500).json({ error: 'Database error' });
-  }
-});
-
-//const PORT = process.env.PORT || 3000;
-//app.listen(PORT, () => {
- // console.log(`Server is running on port ${PORT}`);
-//});
-
-
-
-
-
-
-// Increase body size limit for file uploads (Base64)
 app.use(express.json({ limit: "50mb" }));
 app.use(express.urlencoded({ limit: "50mb", extended: true }));
 
@@ -49,11 +24,11 @@ const {
   sendStockRequestNotification,
 } = require("./emailService");
 
-// PostgreSQL Connection for local development
-//const pool = new Pool({
-//  connectionString: process.env.DATABASE_URL, // Ensure .env has the correct connection string
-//  ssl: false, // Disable SSL for local development
-//});
+// PostgreSQL Connection
+const pool = new Pool({
+  connectionString: process.env.DATABASE_URL,
+  ssl: false,
+});
 
 // Helper function to trim and limit a string to a maximum length (default 50)
 const trimAndLimit = (value, maxLength = 50) => {
@@ -117,12 +92,10 @@ app.post("/api/auth/login", async (req, res) => {
       Driver: ["canConfirmDelivery", "canViewDispatches"]
     };
 
-    // If the user does not have granular permissions stored, assign defaults.
     if (!user.permissions || !Array.isArray(user.permissions) || user.permissions.length === 0) {
       user.permissions = defaultPermissions[user.role] || [];
     }
     
-
     // Generate JWT token including granular permissions.
     const token = jwt.sign({
       id: user.id,
@@ -160,7 +133,8 @@ app.post("/api/auth/forgot-password", async (req, res) => {
       [user.id, token, expiresAt]
     );
 
-    const resetLink = `http://localhost:5173/reset-password/${token}`;
+    const resetLink = `https://my-app-1-uzea.onrender.com/reset-password/${token}`;
+`;
     console.log(`Password reset link for ${email}: ${resetLink}`);
 
     await sendResetEmail(email, resetLink);
@@ -307,8 +281,6 @@ app.get("/api/users/:id", async (req, res) => {
       return res.status(404).json({ error: "User not found" });
     }
     const user = result.rows[0];
-
-    // Define default permissions for each role.
     const defaultPermissions = {
       Administrator: [
         "canViewUsers", "canCreateUser", "canEditUser", "canDeleteUser", "canAssignUserRoles",
@@ -323,12 +295,9 @@ app.get("/api/users/:id", async (req, res) => {
       InventoryManager: ["canViewStock", "canAddStockEntry", "canEditStockEntry", "canDeleteStockEntry"],
       Driver: ["canConfirmDelivery", "canViewDispatches"]
     };
-
-    // If permissions is missing or empty, assign default permissions
     if (!user.permissions || !Array.isArray(user.permissions) || user.permissions.length === 0) {
       user.permissions = defaultPermissions[user.role] || [];
     }
-    
     res.json(user);
   } catch (error) {
     console.error("Error fetching user by id:", error);
@@ -350,18 +319,54 @@ app.get("/api/alerts", async (req, res) => {
 });
 
 // -----------------------
-// Stock Request Endpoints
+// Stock Request Endpoints (Updated to include pickup fields)
 // -----------------------
 app.post("/api/request_stock", async (req, res) => {
-  // 1) ADD job_id to destructuring
-  const { site_worker, request_date, delivery_location, urgency, item_code, item_name, quantity, requestor_email, job_id } = req.body;
-  // 2) Make job_id required (optional if you want to allow null)
-  if (!site_worker || !request_date || !delivery_location || !item_code || !item_name || !quantity || !requestor_email || !job_id) {
-    return res.status(400).json({ error: "Missing required fields" });
+  // Extract fields including new pickup-related ones.
+  const {
+    site_worker,
+    request_date,
+    delivery_location,
+    urgency,
+    item_code,
+    item_name,
+    quantity,
+    requestor_email,
+    job_id,
+    pickup_requested,
+    pickup_datetime,
+    request_type, // Expected values: "stock", "pickup", or "both"
+  } = req.body;
+
+  // Basic required fields.
+  if (!site_worker || !request_date || !requestor_email || !job_id) {
+    return res.status(400).json({
+      error: "Missing required fields: site_worker, request_date, requestor_email, and job_id",
+    });
   }
-  const trimmedItemCode = trimAndLimit(item_code);
+  // For stock or both requests, require stock-specific fields.
+  if (request_type !== "pickup") {
+    if (!delivery_location || !item_code || !item_name || !quantity) {
+      return res.status(400).json({ error: "Missing required fields for stock request" });
+    }
+  }
+
+  // For pickup-only requests, set stock-related fields to defaults.
+  const finalDeliveryLocation = request_type === "pickup" ? "" : trimAndLimit(delivery_location);
+  const finalItemCode = request_type === "pickup" ? "" : trimAndLimit(item_code);
+  const finalItemName = request_type === "pickup" ? "" : trimAndLimit(item_name);
+  const finalQuantity = request_type === "pickup" ? 0 : parseInt(quantity, 10);
+  const finalUrgency =
+    request_type === "pickup"
+      ? "Normal"
+      : urgency && urgency.toString().trim() !== ""
+      ? trimAndLimit(urgency)
+      : "Normal";
+
+  // Handle pickup_datetime: if empty or just whitespace, set to null.
+  const finalPickupDatetime = pickup_datetime && pickup_datetime.trim() !== "" ? pickup_datetime : null;
+
   try {
-    // 3) Add job_id to INSERT statement
     const insertQuery = `
       INSERT INTO request_stock (
         site_worker,
@@ -374,40 +379,52 @@ app.post("/api/request_stock", async (req, res) => {
         item_name,
         quantity,
         requestor_email,
-        job_id
-      ) VALUES ($1, $2, $3, $4, 'Pending', 'Pending', $5, $6, $7, $8, $9)
+        job_id,
+        pickup_requested,
+        pickup_datetime,
+        request_type
+      ) VALUES ($1, $2, $3, $4, 'Pending', 'Pending', $5, $6, $7, $8, $9, $10, $11, $12)
       RETURNING *
     `;
-    // 4) Add job_id to values array
     const values = [
       trimAndLimit(site_worker),
       request_date.toString().trim(),
-      trimAndLimit(delivery_location),
-      urgency && urgency.toString().trim() !== "" ? trimAndLimit(urgency) : "Normal",
-      trimmedItemCode,
-      trimAndLimit(item_name),
-      parseInt(quantity, 10),
+      finalDeliveryLocation,
+      finalUrgency,
+      finalItemCode,
+      finalItemName,
+      finalQuantity,
       requestor_email.trim(),
-      job_id.trim()
+      job_id.trim(),
+      pickup_requested,
+      finalPickupDatetime,
+      request_type,
     ];
+
     const result = await pool.query(insertQuery, values);
-    // Recalc total quantity
-    const totalRes = await pool.query("SELECT SUM(quantity) as total_quantity FROM inventory WHERE item_code = $1", [trimmedItemCode]);
-    if (totalRes.rows.length > 0 && totalRes.rows[0].total_quantity !== null) {
-      const totalQuantity = parseInt(totalRes.rows[0].total_quantity, 10);
-      if (totalQuantity >= 3) {
-        await pool.query(
-          `UPDATE alerts
-           SET settled = true, settled_time = NOW()
-           WHERE type = 'Low Stock Alert' AND message ILIKE $1`,
-          [`%${trimmedItemCode}%`]
-        );
+
+    // For stock-related requests, recalc inventory totals and update alerts.
+    if (request_type !== "pickup") {
+      const totalRes = await pool.query(
+        "SELECT SUM(quantity) as total_quantity FROM inventory WHERE item_code = $1",
+        [finalItemCode]
+      );
+      if (totalRes.rows.length > 0 && totalRes.rows[0].total_quantity !== null) {
+        const totalQuantity = parseInt(totalRes.rows[0].total_quantity, 10);
+        if (totalQuantity >= 3) {
+          await pool.query(
+            `UPDATE alerts
+             SET settled = true, settled_time = NOW()
+             WHERE type = 'Low Stock Alert' AND message ILIKE $1`,
+            [`%${finalItemCode}%`]
+          );
+        }
       }
     }
-    res.status(201).json({ message: "Item added successfully", data: result.rows[0] });
+    res.status(201).json({ message: "Request added successfully", data: result.rows[0] });
   } catch (error) {
-    console.error("Error adding inventory:", error);
-    res.status(500).json({ error: "Failed to insert inventory", details: error.message });
+    console.error("Error adding request_stock:", error);
+    res.status(500).json({ error: "Failed to insert request_stock", details: error.message });
   }
 });
 
@@ -457,6 +474,33 @@ app.put("/api/request_stock/:id/reject", async (req, res) => {
   }
 });
 
+app.put("/api/request_stock/:id/mark-seen", async (req, res) => {
+  const { id } = req.params;
+  const { driver_seen_time } = req.body; // Optional: you can record when it was seen if desired
+  if (!driver_seen_time) {
+    return res.status(400).json({ error: "Missing driver_seen_time" });
+  }
+  try {
+    const result = await pool.query(
+      "UPDATE request_stock SET status = 'Seen by Driver' WHERE id = $1 RETURNING *",
+      [id]
+    );
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: "Request not found" });
+    }
+    res.json(result.rows[0]);
+  } catch (error) {
+    console.error("Error marking request as seen:", error);
+    res.status(500).json({ error: "Failed to mark request as seen", details: error.message });
+  }
+});
+
+// -----------------------
+// NEW: Mount Stock Request Routes
+// -----------------------
+const requestStockRoutes = require("./routes/requestStockRoutes");
+app.use("/api/request_stock", requestStockRoutes);
+
 // -----------------------
 // Inventory Management Endpoints
 // -----------------------
@@ -504,7 +548,6 @@ app.post("/api/inventory", async (req, res) => {
       [trimmedItemCode, trimmedItemName, parsedQuantity, trimmedDescription, isoStockEntryTime]
     );
 
-    // After inserting a new inventory record, recalc the total quantity
     const totalRes = await pool.query(
       "SELECT SUM(quantity) as total_quantity FROM inventory WHERE item_code = $1",
       [trimmedItemCode]
@@ -594,8 +637,6 @@ app.get("/api/inventory/lowstock", async (req, res) => {
   }
 });
 
-// >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
-// MINIMAL ADDITION: Provide a /api/inventory/levels endpoint for the 3D Column Chart
 app.get("/api/inventory/levels", async (req, res) => {
   try {
     const result = await pool.query(`
@@ -613,7 +654,6 @@ app.get("/api/inventory/levels", async (req, res) => {
     res.status(500).json({ error: "Failed to fetch inventory levels" });
   }
 });
-// <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
 
 // -----------------------
 // Dispatch Management & Delivery Endpoints
@@ -632,7 +672,6 @@ app.post("/api/dispatches", async (req, res) => {
   const validRequestId = requestId === "" ? null : parseInt(requestId, 10);
 
   try {
-    // 1) Insert dispatch record
     const dispatchResult = await pool.query(
       `
       INSERT INTO dispatches (
@@ -649,7 +688,6 @@ app.post("/api/dispatches", async (req, res) => {
       [validManagerId, validRequestId, validDriverId, dispatchDate, itemsDispatched, validDispatchedQty]
     );
 
-    // 2) Check total available stock
     const totalRes = await pool.query(
       "SELECT SUM(quantity) as total_quantity FROM inventory WHERE item_code = $1",
       [itemsDispatched]
@@ -659,7 +697,6 @@ app.post("/api/dispatches", async (req, res) => {
       return res.status(400).json({ error: "Insufficient stock for the requested dispatch quantity." });
     }
 
-    // 3) Deduct the dispatched quantity
     let remaining = validDispatchedQty;
     const inventoryRows = await pool.query(
       "SELECT id, quantity FROM inventory WHERE item_code = $1 ORDER BY stock_entry_time DESC",
@@ -675,14 +712,12 @@ app.post("/api/dispatches", async (req, res) => {
       remaining -= deduct;
     }
 
-    // 4) Recalculate total remaining stock
     const newTotalRes = await pool.query(
       "SELECT SUM(quantity) as total_quantity FROM inventory WHERE item_code = $1",
       [itemsDispatched]
     );
     const actualRemainingQty = parseInt(newTotalRes.rows[0].total_quantity, 10) || 0;
 
-    // 5) Upsert low stock alert if needed
     if (actualRemainingQty < 3) {
       await pool.query(
         `INSERT INTO alerts (type, message, date, is_read, settled, settled_time)
@@ -746,7 +781,7 @@ app.get("/api/dispatches/driver/:driverId", async (req, res) => {
 });
 
 app.post("/api/delivery/confirm", async (req, res) => {
-  const { id, role, confirmationTime } = req.body; // id is the dispatch_id
+  const { id, role, confirmationTime } = req.body;
   if (!id || !role || !confirmationTime) {
     return res.status(400).json({ error: "Missing required fields" });
   }
@@ -763,7 +798,6 @@ app.post("/api/delivery/confirm", async (req, res) => {
       );
       return res.status(201).json(result.rows[0]);
     } else if (role.toLowerCase() === "siteworker") {
-      // First, try updating an existing record.
       let result = await pool.query(
         `UPDATE delivery_confirmations
          SET site_worker_confirmation = $1, delivery_status = 'Delivered'
@@ -771,7 +805,6 @@ app.post("/api/delivery/confirm", async (req, res) => {
          RETURNING *`,
         [confirmationTime, id]
       );
-      // If no record was updated, insert a new record.
       if (result.rowCount === 0) {
         result = await pool.query(
           `INSERT INTO delivery_confirmations (dispatch_id, site_worker_confirmation, delivery_status)
@@ -789,7 +822,6 @@ app.post("/api/delivery/confirm", async (req, res) => {
     res.status(500).json({ error: "Failed to confirm delivery" });
   }
 });
-
 
 // -----------------------
 // Notification Endpoint
@@ -826,12 +858,9 @@ app.get("/api/forms", async (req, res) => {
 app.post("/api/forms", async (req, res) => {
   const { job_id, form_type, form_data, attached_files } = req.body;
   if (!job_id || !form_type || !form_data) {
-    return res
-      .status(400)
-      .json({ error: "job_id, form_type, and form_data are required" });
+    return res.status(400).json({ error: "job_id, form_type, and form_data are required" });
   }
 
-  // Decode attached_files from Base64 => bytea
   let attachedFilesBytea = null;
   if (attached_files && Array.isArray(attached_files) && attached_files.length > 0) {
     attachedFilesBytea = attached_files.map((b64) => Buffer.from(b64, "base64"));
@@ -858,7 +887,6 @@ app.put("/api/forms/:id", async (req, res) => {
     return res.status(400).json({ error: "form_data is required" });
   }
 
-  // Decode attached_files from Base64 => bytea
   let attachedFilesBytea = null;
   if (attached_files && Array.isArray(attached_files) && attached_files.length > 0) {
     attachedFilesBytea = attached_files.map((b64) => Buffer.from(b64, "base64"));
@@ -890,7 +918,6 @@ app.put("/api/forms/:id", async (req, res) => {
 const projectRoutes = require("./routes/projectRoutes");
 app.use("/api/projects", projectRoutes);
 
-// NEW: Minimal route for updating user permissions
 app.put("/api/users/:id/permissions", async (req, res) => {
   const { id } = req.params;
   const { permissions } = req.body;
@@ -900,10 +927,9 @@ app.put("/api/users/:id/permissions", async (req, res) => {
   }
 
   try {
-    // Update the 'permissions' column in the 'users' table
     const result = await pool.query(
       "UPDATE users SET permissions = $1::jsonb WHERE id = $2 RETURNING id, name, email, role, status, permissions",
-      [JSON.stringify(permissions), id] // <-- JSON.stringify here
+      [JSON.stringify(permissions), id]
     );
     
     if (result.rows.length === 0) {
@@ -916,22 +942,16 @@ app.put("/api/users/:id/permissions", async (req, res) => {
   }
 });
 
-
-
-
 // -----------------------
-// IMPORTANT: Mount API routes before static file serving
-// If you serve static files (e.g., in production), mount them after the API routes.
+// Static File Serving & Catch-All Routes
+// -----------------------
 if (process.env.NODE_ENV === "production") {
-//  app.use(express.static("build"));
-  //app.get("*", (req, res) => {
-    //res.sendFile(path.join(__dirname, "build", "index.html"));
-  //});
+  app.use(express.static("build"));
+  app.get("*", (req, res) => {
+    res.sendFile(path.join(__dirname, "build", "index.html"));
+  });
 } else {
-  //// Optionally, add a catch-all for API endpoints in development
-  //app.use("/api", (req, res) => {
-   // res.status(404).json({ error: "API endpoint not found" });
-  //});
+  // Optionally add a catch-all for API endpoints in development.
 }
 
 // -----------------------

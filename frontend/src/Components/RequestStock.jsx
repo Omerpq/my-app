@@ -18,26 +18,27 @@ const RequestStock = () => {
   const { user } = useAuth();
   const baseUrl = import.meta.env.VITE_BACKEND_URL;
 
-  // New check to look for granular permission to make the Form available.
-if (!user || (!user.permissions?.includes("canRequestStock") && user.role !== "Administrator")) {
-  return null;
-}
+  // Check for permission to show the form.
+  if (!user || (!user.permissions?.includes("canRequestStock") && user.role !== "Administrator")) {
+    return null;
+  }
 
-
-  // Use user's data for the Requesting Staff field
+  // Use user's data for the Requesting Staff field.
   const siteWorkerValue = `${user.name} - ${user.role} - (ID: ${user.id})`;
 
-  // 1) We keep itemCode in the state, but now it's auto-populated.
-  //    itemName is chosen from the dropdown.
+  // NEW: State for request type selection ("stock", "pickup", or "both")
+  const [requestType, setRequestType] = useState("stock");
+
+  // State for stock request data.
   const [requestData, setRequestData] = useState({
     siteWorker: siteWorkerValue,
     requestDate: getLocalDateTime(),
-    itemName: "",    // <--- Now the user picks itemName from a dropdown
-    itemCode: "",    // <--- This is auto-populated/locked
+    itemName: "",
+    itemCode: "",
     quantity: "",
     deliveryLocation: "",
     urgency: "",
-    jobId: "" // existing field for project
+    jobId: ""
   });
 
   const [availableQuantity, setAvailableQuantity] = useState(null);
@@ -46,23 +47,16 @@ if (!user || (!user.permissions?.includes("canRequestStock") && user.role !== "A
   const [loading, setLoading] = useState(false);
   const [submitted, setSubmitted] = useState(false);
 
-  // 2) List of available item **names** from inventory
+  // 2) List of available item names from inventory.
   const [itemNames, setItemNames] = useState([]);
 
-  // 3) NEW: List of projects for the drop-down (unchanged from your code)
+  // 3) List of projects for the dropdown.
   const [projects, setProjects] = useState([]);
 
-  // Validate required fields
-  const isFormValid =
-    requestData.siteWorker.trim() &&
-    requestData.requestDate.trim() &&
-    requestData.itemName.trim() &&       // Now we require itemName
-    requestData.itemCode.trim() &&       // itemCode is auto-populated
-    requestData.quantity.toString().trim() &&
-    requestData.deliveryLocation.trim() &&
-    requestData.jobId.trim();
+  // NEW: State for Pickup Request field.
+  const [pickupDateTime, setPickupDateTime] = useState("");
 
-  // Input styling
+  // Input styling.
   const inputClass = `w-full px-4 py-2 mt-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400 transition-all duration-500 ${
     darkMode
       ? "bg-gray-700 text-white border-gray-600"
@@ -75,14 +69,14 @@ if (!user || (!user.permissions?.includes("canRequestStock") && user.role !== "A
       : "bg-gray-100 text-gray-900 border-gray-300"
   }`;
 
-  // Refs for vertical navigation
+  // Refs for vertical navigation.
   const itemNameRef = useRef(null);
   const quantityRef = useRef(null);
   const deliveryLocationRef = useRef(null);
   const requestDateRef = useRef(null);
   const urgencyRef = useRef(null);
 
-  // For arrow navigation
+  // For arrow navigation.
   const handleVerticalNavigation = (e, fieldName) => {
     if (e.key === "Enter" || e.key === "ArrowDown") {
       e.preventDefault();
@@ -123,14 +117,13 @@ if (!user || (!user.permissions?.includes("canRequestStock") && user.role !== "A
     }
   };
 
-  // 4) Fetch item NAMES from inventory
+  // 4) Fetch item names from inventory.
   useEffect(() => {
     const fetchItemNames = async () => {
       try {
         const res = await fetch(`${baseUrl}/api/inventory`);
         if (res.ok) {
           const data = await res.json();
-          // Extract unique item_name
           const names = Array.from(new Set(data.map((item) => item.item_name.trim())));
           setItemNames(names);
         }
@@ -141,7 +134,7 @@ if (!user || (!user.permissions?.includes("canRequestStock") && user.role !== "A
     fetchItemNames();
   }, [baseUrl]);
 
-  // 5) Fetch projects (unchanged from your code)
+  // 5) Fetch projects.
   useEffect(() => {
     const fetchProjects = async () => {
       try {
@@ -157,50 +150,40 @@ if (!user || (!user.permissions?.includes("canRequestStock") && user.role !== "A
     fetchProjects();
   }, [baseUrl]);
 
-  // 6) When user picks an item name from the dropdown
+  // 6) When user picks an item name from the dropdown (only for stock requests).
   const handleItemNameChange = (e) => {
     const selectedName = e.target.value;
     setRequestData((prev) => ({
       ...prev,
       itemName: selectedName,
-      itemCode: "" // reset code
+      itemCode: ""
     }));
     setMessage("");
     setError("");
     setAvailableQuantity(null);
-    // Now we look up the item code from inventory
     checkExistingName(selectedName.trim());
   };
 
-  // 7) Lookup item code & available quantity by item name
+  // 7) Lookup item code & available quantity by item name.
   const checkExistingName = async (itemName) => {
     if (!itemName) return;
     try {
-      // We fetch the entire inventory again (or you could store it in state from earlier).
-      // Then find a matching item by item_name
       const res = await fetch(`${baseUrl}/api/inventory`);
       if (!res.ok) {
         console.error("Error fetching inventory for item name:", res.statusText);
         return;
       }
       const data = await res.json();
-      // Find the first item that matches the chosen itemName
       const matched = data.find((item) => item.item_name.trim() === itemName);
       if (matched) {
-        // matched.item_code => auto-populate requestData.itemCode
         setRequestData((prev) => ({
           ...prev,
           itemCode: matched.item_code.trim()
         }));
-        // Also fetch the available quantity for that code
         const qtyRes = await fetch(`${baseUrl}/api/inventory/item/${matched.item_code.trim()}`);
         if (qtyRes.ok) {
           const qtyData = await qtyRes.json();
-          if (qtyData && qtyData.quantity !== undefined) {
-            setAvailableQuantity(qtyData.quantity);
-          } else {
-            setAvailableQuantity(0);
-          }
+          setAvailableQuantity(qtyData && qtyData.quantity !== undefined ? qtyData.quantity : 0);
         } else {
           setAvailableQuantity(0);
         }
@@ -210,7 +193,7 @@ if (!user || (!user.permissions?.includes("canRequestStock") && user.role !== "A
     }
   };
 
-  // For other input changes
+  // For other input changes.
   const handleChange = (e) => {
     const { name, value } = e.target;
     setRequestData({ ...requestData, [name]: value });
@@ -218,7 +201,25 @@ if (!user || (!user.permissions?.includes("canRequestStock") && user.role !== "A
     setError("");
   };
 
-  // Submit
+  // Form validation depends on the selected request type.
+  let isStockValid = true;
+  if (requestType === "stock" || requestType === "both") {
+    isStockValid =
+      requestData.siteWorker.trim() &&
+      requestData.requestDate.trim() &&
+      requestData.itemName.trim() &&
+      requestData.itemCode.trim() &&
+      requestData.quantity.toString().trim() &&
+      requestData.deliveryLocation.trim() &&
+      requestData.jobId.trim();
+  }
+  let isPickupValid = true;
+  if (requestType === "pickup" || requestType === "both") {
+    isPickupValid = requestData.jobId.trim() && pickupDateTime.trim();
+  }
+  const isFormValid = isStockValid && isPickupValid;
+
+  // Submit handler builds the payload conditionally.
   const handleSubmit = async (e) => {
     e.preventDefault();
     setMessage("");
@@ -230,29 +231,33 @@ if (!user || (!user.permissions?.includes("canRequestStock") && user.role !== "A
     }
 
     const parsedQty = parseInt(requestData.quantity, 10);
-    if (isNaN(parsedQty) || parsedQty <= 0) {
+    if ((requestType === "stock" || requestType === "both") && (isNaN(parsedQty) || parsedQty <= 0)) {
       setError("Quantity must be a positive number.");
       return;
     }
-    if (availableQuantity !== null && parsedQty > availableQuantity) {
+    if ((requestType === "stock" || requestType === "both") && availableQuantity !== null && parsedQty > availableQuantity) {
       setError(
         `Entered quantity (${parsedQty}) exceeds available stock (${availableQuantity}). Please enter a quantity less than or equal to the available stock.`
       );
       return;
     }
 
+    // Build payload conditionally based on requestType.
     const payload = {
       site_worker: requestData.siteWorker.trim(),
       request_date: requestData.requestDate.trim(),
-      item_code: requestData.itemCode.trim(),  // We now have itemCode auto-populated
-      item_name: requestData.itemName.trim(),
-      quantity: parsedQty,
-      delivery_location: requestData.deliveryLocation.trim(),
-      urgency: requestData.urgency.trim() || "Normal",
+      item_code: requestType === "pickup" ? "" : requestData.itemCode.trim(),
+      item_name: requestType === "pickup" ? "" : requestData.itemName.trim(),
+      quantity: requestType === "pickup" ? 0 : parsedQty,
+      delivery_location: requestType === "pickup" ? "" : requestData.deliveryLocation.trim(),
+      urgency: requestType === "pickup" ? "Normal" : requestData.urgency.trim() || "Normal",
       requestor_email: user.email,
       status: "Pending",
       approval_status: "Pending",
-      job_id: requestData.jobId.trim()
+      job_id: requestData.jobId.trim(),
+      pickup_requested: requestType === "pickup" || requestType === "both",
+      pickup_datetime: (requestType === "pickup" || requestType === "both") ? pickupDateTime : null,
+      request_type: requestType
     };
 
     setLoading(true);
@@ -264,14 +269,14 @@ if (!user || (!user.permissions?.includes("canRequestStock") && user.role !== "A
       });
       const data = await res.json();
       if (!res.ok) {
-        setError(data.error || "Failed to submit stock request");
+        setError(data.error || "Failed to submit request");
       } else {
-        setMessage("Stock request submitted");
+        setMessage("Request submitted");
         setSubmitted(true);
       }
     } catch (err) {
-      console.error("Error submitting stock request:", err);
-      setError("Error submitting stock request");
+      console.error("Error submitting request:", err);
+      setError("Error submitting request");
     } finally {
       setLoading(false);
     }
@@ -292,6 +297,8 @@ if (!user || (!user.permissions?.includes("canRequestStock") && user.role !== "A
     setSubmitted(false);
     setMessage("");
     setError("");
+    setRequestType("stock");
+    setPickupDateTime("");
   };
 
   return (
@@ -302,18 +309,77 @@ if (!user || (!user.permissions?.includes("canRequestStock") && user.role !== "A
           : "bg-gradient-to-br from-gray-100 to-gray-300 text-gray-900 shadow-2xl border border-gray-200"
       }`}
     >
-      <h2 className="text-3xl font-bold text-center mb-6">Request Stock</h2>
+      <h2 className="text-3xl font-bold text-center mb-6">Create Request</h2>
+      
+      {/* Request Type Selection */}
+      <div className="mb-4">
+        <label className={`block font-semibold ${darkMode ? "text-gray-300" : "text-gray-700"}`}>
+          Select Request Type
+        </label>
+        <div className="flex space-x-4 mt-1">
+          <label className="inline-flex items-center">
+            <input
+              type="radio"
+              name="requestType"
+              value="stock"
+              checked={requestType === "stock"}
+              onChange={(e) => setRequestType(e.target.value)}
+              className="form-radio"
+            />
+            <span className="ml-2">Stock Request Only</span>
+          </label>
+          <label className="inline-flex items-center">
+            <input
+              type="radio"
+              name="requestType"
+              value="pickup"
+              checked={requestType === "pickup"}
+              onChange={(e) => setRequestType(e.target.value)}
+              className="form-radio"
+            />
+            <span className="ml-2">Pickup Request Only</span>
+          </label>
+          <label className="inline-flex items-center">
+            <input
+              type="radio"
+              name="requestType"
+              value="both"
+              checked={requestType === "both"}
+              onChange={(e) => setRequestType(e.target.value)}
+              className="form-radio"
+            />
+            <span className="ml-2">Both</span>
+          </label>
+        </div>
+      </div>
+      
+      {/* Project Dropdown (always visible) */}
+      <div className="mb-4">
+        <label className={`block font-semibold ${darkMode ? "text-gray-300" : "text-gray-700"}`}>
+          Project <span className="text-red-500">*</span>
+        </label>
+        <select
+          name="jobId"
+          value={requestData.jobId}
+          onChange={(e) => setRequestData((prev) => ({ ...prev, jobId: e.target.value }))}
+          className={selectClass}
+          required
+        >
+          <option value="">-- Select a Project --</option>
+          {projects.map((proj) => (
+            <option key={proj.job_id} value={proj.job_id}>
+              {proj.job_id} - {proj.address}
+            </option>
+          ))}
+        </select>
+      </div>
+
       <form onSubmit={handleSubmit}>
         <div className="space-y-4">
-          {/* Field 1: Requesting Staff (read-only) */}
+          {/* Requesting Staff (read-only) */}
           <div>
-            <label
-              className={`block font-semibold ${
-                darkMode ? "text-gray-300" : "text-gray-700"
-              }`}
-            >
-              Requesting Staff (Name - Role - (ID: xx)){" "}
-              <span className="text-red-500">*</span>
+            <label className={`block font-semibold ${darkMode ? "text-gray-300" : "text-gray-700"}`}>
+              Requesting Staff (Name - Role - (ID: xx)) <span className="text-red-500">*</span>
             </label>
             <input
               type="text"
@@ -325,155 +391,139 @@ if (!user || (!user.permissions?.includes("canRequestStock") && user.role !== "A
             />
           </div>
 
-          {/* Project (job_id) */}
-          <div>
-            <label
-              className={`block font-semibold ${
-                darkMode ? "text-gray-300" : "text-gray-700"
-              }`}
-            >
-              Project <span className="text-red-500">*</span>
-            </label>
-            <select
-              name="jobId"
-              value={requestData.jobId}
-              onChange={(e) =>
-                setRequestData((prev) => ({ ...prev, jobId: e.target.value }))
-              }
-              className={selectClass}
-              required
-            >
-              <option value="">-- Select a Project --</option>
-              {projects.map((proj) => (
-                <option key={proj.job_id} value={proj.job_id}>
-                  {proj.job_id} - {proj.address}
-                </option>
-              ))}
-            </select>
-          </div>
+          {/* Conditionally render stock-specific fields if requestType is not "pickup" */}
+          {requestType !== "pickup" && (
+            <>
+              {/* Item Name Dropdown */}
+              <div>
+                <label className={`block font-semibold ${darkMode ? "text-gray-300" : "text-gray-700"}`}>
+                  Item Name <span className="text-red-500">*</span>
+                </label>
+                <select
+                  name="itemName"
+                  value={requestData.itemName}
+                  onChange={handleItemNameChange}
+                  onKeyDown={(e) => handleVerticalNavigation(e, "itemName")}
+                  ref={itemNameRef}
+                  className={selectClass}
+                >
+                  <option value="">Select item name</option>
+                  {itemNames.map((name) => (
+                    <option key={name} value={name}>
+                      {name}
+                    </option>
+                  ))}
+                </select>
+              </div>
 
-          {/* Field 3: Item Name (Dropdown) */}
-          <div>
-            <label
-              className={`block font-semibold ${
-                darkMode ? "text-gray-300" : "text-gray-700"
-              }`}
-            >
-              Item Name <span className="text-red-500">*</span>
-            </label>
-            <select
-              name="itemName"
-              value={requestData.itemName}
-              onChange={handleItemNameChange}
-              onKeyDown={(e) => handleVerticalNavigation(e, "itemName")}
-              ref={itemNameRef}
-              className={selectClass}
-            >
-              <option value="">Select item name</option>
-              {itemNames.map((name) => (
-                <option key={name} value={name}>
-                  {name}
-                </option>
-              ))}
-            </select>
-          </div>
+              {/* Item Code (auto-populated) */}
+              <div>
+                <label className={`block font-semibold ${darkMode ? "text-gray-300" : "text-gray-700"}`}>
+                  Item Code <span className="text-red-500">*</span>
+                </label>
+                <input
+                  type="text"
+                  name="itemCode"
+                  value={requestData.itemCode}
+                  readOnly
+                  className={`w-full px-4 py-2 mt-2 border rounded-lg cursor-not-allowed focus:outline-none ${
+                    darkMode ? "bg-gray-700 text-gray-300 border-gray-600" : "bg-gray-200 text-gray-500 border-gray-300"
+                  }`}
+                />
+              </div>
 
-          {/* Field 4: Item Code (auto-populated, locked) */}
-          <div>
-            <label
-              className={`block font-semibold ${
-                darkMode ? "text-gray-300" : "text-gray-700"
-              }`}
-            >
-              Item Code <span className="text-red-500">*</span>
-            </label>
-            <input
-              type="text"
-              name="itemCode"
-              value={requestData.itemCode}
-              readOnly
-              className={`w-full px-4 py-2 mt-2 border rounded-lg cursor-not-allowed focus:outline-none ${
-                darkMode
-                  ? "bg-gray-700 text-gray-300 border-gray-600"
-                  : "bg-gray-200 text-gray-500 border-gray-300"
-              }`}
-            />
-          </div>
+              {/* Total Quantity Available */}
+              <div>
+                <label className={`block font-semibold ${darkMode ? "text-gray-300" : "text-gray-700"}`}>
+                  Total Quantity Available
+                </label>
+                <input
+                  type="number"
+                  value={availableQuantity !== null ? availableQuantity : ""}
+                  readOnly
+                  disabled
+                  className={`w-full px-4 py-2 mt-2 border rounded-lg focus:outline-none ${
+                    darkMode
+                      ? "bg-gray-700 text-gray-400 border-gray-600 cursor-not-allowed"
+                      : "bg-gray-200 text-gray-500 border-gray-300 cursor-not-allowed"
+                  }`}
+                  tabIndex={-1}
+                />
+              </div>
 
-          {/* Field 5: Total Quantity Available (always rendered) */}
-          <div>
-            <label
-              className={`block font-semibold ${
-                darkMode ? "text-gray-300" : "text-gray-700"
-              }`}
-            >
-              Total Quantity Available
-            </label>
-            <input
-              type="number"
-              value={availableQuantity !== null ? availableQuantity : ""}
-              readOnly
-              disabled
-              className={`w-full px-4 py-2 mt-2 border rounded-lg focus:outline-none ${
-                darkMode
-                  ? "bg-gray-700 text-gray-400 border-gray-600 cursor-not-allowed"
-                  : "bg-gray-200 text-gray-500 border-gray-300 cursor-not-allowed"
-              }`}
-              tabIndex={-1}
-            />
-          </div>
+              {/* Quantity */}
+              <div>
+                <label className={`block font-semibold ${darkMode ? "text-gray-300" : "text-gray-700"}`}>
+                  Quantity <span className="text-red-500">*</span>
+                </label>
+                <input
+                  type="number"
+                  name="quantity"
+                  min="1"
+                  max={availableQuantity !== null ? availableQuantity : undefined}
+                  value={requestData.quantity}
+                  onChange={handleChange}
+                  onKeyDown={(e) => handleVerticalNavigation(e, "quantity")}
+                  ref={quantityRef}
+                  placeholder="Enter quantity"
+                  className={inputClass}
+                />
+              </div>
 
-          {/* Field 6: Quantity */}
-          <div>
-            <label
-              className={`block font-semibold ${
-                darkMode ? "text-gray-300" : "text-gray-700"
-              }`}
-            >
-              Quantity <span className="text-red-500">*</span>
-            </label>
-            <input
-              type="number"
-              name="quantity"
-              min="1"
-              max={availableQuantity !== null ? availableQuantity : undefined}
-              value={requestData.quantity}
-              onChange={handleChange}
-              onKeyDown={(e) => handleVerticalNavigation(e, "quantity")}
-              ref={quantityRef}
-              placeholder="Enter quantity"
-              className={inputClass}
-            />
-          </div>
+              {/* Delivery Location */}
+              <div>
+                <label className={`block font-semibold ${darkMode ? "text-gray-300" : "text-gray-700"}`}>
+                  Delivery Location <span className="text-red-500">*</span>
+                </label>
+                <input
+                  type="text"
+                  name="deliveryLocation"
+                  value={requestData.deliveryLocation}
+                  onChange={handleChange}
+                  onKeyDown={(e) => handleVerticalNavigation(e, "deliveryLocation")}
+                  ref={deliveryLocationRef}
+                  placeholder="Enter delivery location"
+                  className={inputClass}
+                />
+              </div>
 
-          {/* Field 7: Delivery Location */}
-          <div>
-            <label
-              className={`block font-semibold ${
-                darkMode ? "text-gray-300" : "text-gray-700"
-              }`}
-            >
-              Delivery Location <span className="text-red-500">*</span>
-            </label>
-            <input
-              type="text"
-              name="deliveryLocation"
-              value={requestData.deliveryLocation}
-              onChange={handleChange}
-              onKeyDown={(e) => handleVerticalNavigation(e, "deliveryLocation")}
-              ref={deliveryLocationRef}
-              placeholder="Enter delivery location"
-              className={inputClass}
-            />
-          </div>
+              {/* Urgency */}
+              <div>
+                <label className={`block font-semibold ${darkMode ? "text-gray-300" : "text-gray-700"}`}>
+                  Urgency (optional)
+                </label>
+                <input
+                  type="text"
+                  name="urgency"
+                  value={requestData.urgency}
+                  onChange={handleChange}
+                  onKeyDown={(e) => handleVerticalNavigation(e, "urgency")}
+                  ref={urgencyRef}
+                  placeholder="e.g. High, Medium, Low"
+                  className={inputClass}
+                />
+              </div>
+            </>
+          )}
 
-          {/* Field 8: Request Date & Time */}
+          {/* Render Pickup Date/Time if requestType is "pickup" or "both" */}
+          {(requestType === "pickup" || requestType === "both") && (
+            <div>
+              <label className={`block font-semibold ${darkMode ? "text-gray-300" : "text-gray-700"}`}>
+                Pickup Date &amp; Time <span className="text-red-500">*</span>
+              </label>
+              <input
+                type="datetime-local"
+                value={pickupDateTime}
+                onChange={(e) => setPickupDateTime(e.target.value)}
+                className={inputClass}
+              />
+            </div>
+          )}
+
+          {/* Request Date & Time */}
           <div>
-            <label
-              className={`block font-semibold ${
-                darkMode ? "text-gray-300" : "text-gray-700"
-              }`}
-            >
+            <label className={`block font-semibold ${darkMode ? "text-gray-300" : "text-gray-700"}`}>
               Request Date &amp; Time <span className="text-red-500">*</span>
             </label>
             <input
@@ -486,27 +536,6 @@ if (!user || (!user.permissions?.includes("canRequestStock") && user.role !== "A
               className={inputClass}
             />
           </div>
-
-          {/* Field 9: Urgency (optional) */}
-          <div>
-            <label
-              className={`block font-semibold ${
-                darkMode ? "text-gray-300" : "text-gray-700"
-              }`}
-            >
-              Urgency (optional)
-            </label>
-            <input
-              type="text"
-              name="urgency"
-              value={requestData.urgency}
-              onChange={handleChange}
-              onKeyDown={(e) => handleVerticalNavigation(e, "urgency")}
-              ref={urgencyRef}
-              placeholder="e.g. High, Medium, Low"
-              className={inputClass}
-            />
-          </div>
         </div>
 
         {/* Message Block */}
@@ -515,10 +544,7 @@ if (!user || (!user.permissions?.includes("canRequestStock") && user.role !== "A
           {message && (
             <>
               <p className="text-green-600 text-sm">{message}</p>
-              <p
-                onClick={handleAddAnotherRequest}
-                className="text-blue-500 cursor-pointer text-base mt-1"
-              >
+              <p onClick={handleAddAnotherRequest} className="text-blue-500 cursor-pointer text-base mt-1">
                 Add another request
               </p>
             </>
@@ -542,14 +568,7 @@ if (!user || (!user.permissions?.includes("canRequestStock") && user.role !== "A
                 fill="none"
                 viewBox="0 0 24 24"
               >
-                <circle
-                  className="opacity-25"
-                  cx="12"
-                  cy="12"
-                  r="10"
-                  stroke="currentColor"
-                  strokeWidth="4"
-                ></circle>
+                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
                 <path
                   className="opacity-75"
                   fill="currentColor"
@@ -559,7 +578,7 @@ if (!user || (!user.permissions?.includes("canRequestStock") && user.role !== "A
               Submitting...
             </span>
           ) : (
-            "Submit Request"
+            "Create Request"
           )}
         </button>
       </form>

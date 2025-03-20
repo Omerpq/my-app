@@ -11,8 +11,7 @@ const getLocalDateTimeString = (date = new Date()) => {
 const CreateProject = () => {
   const { darkMode } = useTheme();
   const { user } = useAuth();
-  const baseUrl = process.env.VITE_BACKEND_URL;
-  
+  const baseUrl = process.env.VITE_BACKEND_URL || "https://my-app-1-uzea.onrender.com";  
   const now = getLocalDateTimeString();
   
   // Initial state for projectData

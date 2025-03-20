@@ -29,7 +29,6 @@ export default function ForgotPassword() {
 
     try {
         const response = await fetch("https://my-app-1-uzea.onrender.com/api/auth/forgot-password", {
-        
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email }),

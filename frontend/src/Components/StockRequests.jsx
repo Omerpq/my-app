@@ -15,7 +15,7 @@ const StockRequests = ({ onStatusChange }) => {
   const [sortField, setSortField] = useState("");
   const [sortOrder, setSortOrder] = useState("asc");
   const [processing, setProcessing] = useState(false);
-  const baseUrl = process.env.VITE_BACKEND_URL;
+  const baseUrl = process.env.VITE_BACKEND_URL || "https://my-app-1-uzea.onrender.com";
   const adminEmail = process.env.VITE_ADMIN_EMAIL;
 
   const isSiteWorker = user.role === "SiteWorker";

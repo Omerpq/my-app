@@ -49,7 +49,7 @@ const getUserInitialsById = (id, users) => {
 
 const ViewProjects = () => {
   const { darkMode } = useTheme();
-  const baseUrl = process.env.VITE_BACKEND_URL;
+  const baseUrl = process.env.VITE_BACKEND_URL || "https://my-app-1-uzea.onrender.com";
   const [projects, setProjects] = useState([]);
   const [companies, setCompanies] = useState([]);
   const [users, setUsers] = useState([]);

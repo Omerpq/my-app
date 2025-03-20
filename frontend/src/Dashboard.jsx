@@ -35,8 +35,8 @@ const LowInventoryModal = ({ isOpen, onClose, darkMode }) => {
   useEffect(() => {
     if (isOpen) {
       document.body.style.overflow = "hidden";
-      fetch(`${BASE_URL}/api/inventory/lowstock`)
-        .then((res) => res.json())
+      fetch("https://my-app-1-uzea.onrender.com/api/inventory/lowstock")
+     .then((res) => res.json())
         .then((data) => setItems(data))
         .catch((err) =>
           console.error("Failed to fetch low inventory items", err)
@@ -116,7 +116,7 @@ const TotalHoursModal = ({ isOpen, onClose, darkMode }) => {
   useEffect(() => {
     if (isOpen) {
       document.body.style.overflow = "hidden";
-      fetch(`${BASE_URL}/api/projects/dashboard/hours`)
+      fetch("https://my-app-1-uzea.onrender.com/api/projects/dashboard/hours")
         .then((res) => res.json())
         .then((data) => setHoursDetails(data))
         .catch((err) =>
@@ -204,7 +204,7 @@ const AvgCompletionModal = ({ isOpen, onClose, darkMode }) => {
   useEffect(() => {
     if (isOpen) {
       document.body.style.overflow = "hidden";
-      fetch(`${BASE_URL}/api/projects/dashboard/avg-completion`)
+      fetch("https://my-app-1-uzea.onrender.com/api/projects/dashboard/avg-completion")
         .then((res) => res.json())
         .then((data) => setAvgDetails(data))
         .catch((err) =>
@@ -298,7 +298,7 @@ const ActiveProjectsModal = ({ isOpen, onClose, darkMode }) => {
   useEffect(() => {
     if (isOpen) {
       document.body.style.overflow = "hidden";
-      fetch(`${BASE_URL}/api/projects/active`)
+      fetch("https://my-app-1-uzea.onrender.com/api/projects/active")
         .then((res) => res.json())
         .then((data) => setProjects(Array.isArray(data) ? data : []))
         .catch((err) => console.error("Failed to fetch active projects", err));
@@ -388,7 +388,7 @@ const CompletedProjectsModal = ({ isOpen, onClose, darkMode }) => {
   useEffect(() => {
     if (isOpen) {
       document.body.style.overflow = "hidden";
-      fetch(`${BASE_URL}/api/projects/completed`)
+      fetch("https://my-app-1-uzea.onrender.com/api/projects/completed")
         .then((res) => res.json())
         .then((data) => setProjects(Array.isArray(data) ? data : []))
         .catch((err) =>
@@ -472,7 +472,7 @@ const OverdueProjectsModal = ({ isOpen, onClose, darkMode }) => {
   useEffect(() => {
     if (isOpen) {
       document.body.style.overflow = "hidden";
-      fetch(`${BASE_URL}/api/projects/overdue`)
+      fetch("https://my-app-1-uzea.onrender.com/api/projects/overdue")
         .then((res) => res.json())
         .then((data) => setProjects(Array.isArray(data) ? data : []))
         .catch((err) => console.error("Failed to fetch overdue projects", err));
@@ -557,8 +557,7 @@ const PendingRequestsModal = ({ isOpen, onClose, darkMode }) => {
   useEffect(() => {
     if (isOpen) {
       document.body.style.overflow = "hidden";
-      fetch(`${BASE_URL}/api/projects/request_stock/pending`)
-        .then((res) => res.json())
+      fetch("https://my-app-1-uzea.onrender.com/api/projects/request_stock/pending")  .then((res) => res.json())
         .then((data) => setRequests(Array.isArray(data) ? data : []))
         .catch((err) => console.error("Failed to fetch pending requests", err));
     } else {
@@ -649,7 +648,7 @@ const ApprovedRequestsModal = ({ isOpen, onClose, darkMode }) => {
   useEffect(() => {
     if (isOpen) {
       document.body.style.overflow = "hidden";
-      fetch(`${BASE_URL}/api/projects/request_stock/approved`)
+      fetch("https://my-app-1-uzea.onrender.com/api/projects/request_stock/approved")
         .then((res) => res.json())
         .then((data) => setRequests(Array.isArray(data) ? data : []))
         .catch((err) =>
@@ -750,7 +749,7 @@ const RejectedRequestsModal = ({ isOpen, onClose, darkMode }) => {
   useEffect(() => {
     if (isOpen) {
       document.body.style.overflow = "hidden";
-      fetch(`${BASE_URL}/api/projects/request_stock/rejected`)
+      fetch("https://my-app-1-uzea.onrender.com/api/projects/request_stock/rejected")
         .then((res) => res.json())
         .then((data) => setRequests(Array.isArray(data) ? data : []))
         .catch((err) => console.error("Failed to fetch rejected requests", err));
@@ -958,7 +957,8 @@ const Dashboard = () => {
 
   // Minimal addition: fetch inventory data & handle 404 or non-array
   useEffect(() => {
-    fetch(`${BASE_URL}/api/inventory/levels`)
+    //fetch(`${BASE_URL}/api/inventory/levels`)
+    fetch("https://my-app-1-uzea.onrender.com/api/inventory/levels")
       .then((res) => {
         if (!res.ok) {
           console.error("Inventory endpoint returned:", res.status);

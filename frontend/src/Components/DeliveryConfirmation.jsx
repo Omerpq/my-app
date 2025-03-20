@@ -7,8 +7,7 @@ const DeliveryConfirmation = () => {
   const { darkMode } = useTheme();
   const { user } = useAuth();
   const [items, setItems] = useState([]);
-  const baseUrl = process.env.VITE_BACKEND_URL;
-
+  const baseUrl = process.env.VITE_BACKEND_URL || "https://my-app-1-uzea.onrender.com";
   // Search & Sort States
   const [searchTerm, setSearchTerm] = useState("");
   const [sortField, setSortField] = useState("dispatch_date");

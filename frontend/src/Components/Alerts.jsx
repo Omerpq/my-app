@@ -9,8 +9,7 @@ const Alerts = () => {
   const [settledFilter, setSettledFilter] = useState("all"); // "all", "settled", or "notSettled"
   const [sortColumn, setSortColumn] = useState("");
   const [sortDirection, setSortDirection] = useState("asc");
-  const baseUrl = process.env.VITE_BACKEND_URL;
-
+  const baseUrl = process.env.VITE_BACKEND_URL || "https://my-app-1-uzea.onrender.com";
   useEffect(() => {
     fetch(`${baseUrl}/api/alerts`)
       .then((res) => res.json())

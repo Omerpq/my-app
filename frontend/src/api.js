@@ -1,5 +1,5 @@
 // src/api.js
-const API_BASE = "https://my-app-1-uzea.onrender.com/api";
+const API_BASE = "http://localhost:5000/api";
 
 // Actual implementation –
 export const getUsers = async () => {

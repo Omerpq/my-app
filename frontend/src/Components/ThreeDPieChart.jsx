@@ -16,33 +16,23 @@ if (Highcharts3DModule && typeof Highcharts3DModule.init === 'function') {
 const ThreeDPieChart = ({ data = [], darkMode }) => {
   const chartRef = useRef(null);
 
-  // Toggle between Pie and Donut
+  // State for toggling between Pie and Donut
   const [isDonut, setIsDonut] = useState(false);
 
-  // Minimal change: map any variation of status to "active", "completed", or "overdue"
-  const getColorForStatus = (rawStatus) => {
-    // Normalize the string: trim whitespace, make lowercase
-    const status = rawStatus.trim().toLowerCase();
-
-    if (status === 'active') {
-      return 'rgba(0,123,255,0.9)';       // Blue
-    } else if (status === 'completed') {
-      return 'rgba(40,167,69,0.9)';       // Green
-    } else if (status === 'overdue') {
-      return 'rgba(255,69,0,0.9)';        // Red
-    } else {
-      return 'rgba(128,128,128,0.7)';     // Gray fallback
-    }
-  };
-
-  // Build series data, applying the color logic above
+  // Convert your data => Highcharts format
   const seriesData = data.map(item => ({
-    // Keep original item.status for display (so it might show "Overdue" or "overdue")
     name: item.status,
-    y: item.count,
-    color: getColorForStatus(item.status)
+    y: item.count
   }));
 
+  // Color array for your slices
+  const colors = [
+    'rgba(0,123,255,0.9)', // Active (blue)
+    'rgba(40,167,69,0.9)', // Completed (green)
+    'rgba(255,69,0,0.9)'   // Overdue (red)
+  ];
+
+  // Build the Highcharts options object
   const options = {
     chart: {
       type: 'pie',
@@ -72,7 +62,7 @@ const ThreeDPieChart = ({ data = [], darkMode }) => {
         allowPointSelect: true,
         cursor: 'pointer',
         depth: 50,
-        // Switch between donut and pie
+        // If isDonut is true => 50% inner size, else => 0% (normal pie)
         innerSize: isDonut ? '50%' : '0%',
         dataLabels: {
           enabled: true,
@@ -84,9 +74,10 @@ const ThreeDPieChart = ({ data = [], darkMode }) => {
         },
         borderColor: '#ffffff',
         borderWidth: 1,
+        // Glow effect using a bright shadow
         shadow: {
           enabled: true,
-          color: 'rgba(255,255,255,0.6)',
+          color: 'rgba(255,255,255,0.6)', // bright glow color
           offsetX: 0,
           offsetY: 0,
           width: 15
@@ -96,7 +87,8 @@ const ThreeDPieChart = ({ data = [], darkMode }) => {
     series: [
       {
         name: 'Projects',
-        data: seriesData
+        data: seriesData,
+        colors
       }
     ]
   };
@@ -114,7 +106,9 @@ const ThreeDPieChart = ({ data = [], darkMode }) => {
       <div className="flex justify-end mb-2">
         <label className="flex items-center cursor-pointer">
           <span
-            className={`mr-2 font-semibold ${darkMode ? 'text-gray-300' : 'text-gray-700'}`}
+            className={`mr-2 font-semibold ${
+              darkMode ? 'text-gray-300' : 'text-gray-700'
+            }`}
           >
             {isDonut ? 'Donut' : 'Pie'}
           </span>

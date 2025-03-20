@@ -7,8 +7,8 @@ import { useAuth } from "./context/AuthContext";
 import { useLanguage } from "./context/LanguageContext";
 
 // Existing visualizations
-import ThreeDPieChart from "./Components/ThreeDPieChart";
-import GeoDistributionMap from "./Components/GeoDistributionMap";
+import ThreeDPieChart from "./components/ThreeDPieChart";
+import GeoDistributionMap from "./components/GeoDistributionMap";
 
 // NEW: Import the Eye icon from react-icons
 import { FaEye } from "react-icons/fa";

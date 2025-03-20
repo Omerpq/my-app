@@ -12,7 +12,7 @@ function AdminKpiAssignments() {
   }, []);
 
   async function fetchAssignments() {
-    const url = "https://my-app-1-uzea.onrender.com/api/admin/kpis/assignments";
+    const url = "http://localhost:5000/api/admin/kpis/assignments";
     const headers = {
       "Content-Type": "application/json",
       Authorization: user?.token ? `Bearer ${user.token}` : "",
@@ -42,7 +42,7 @@ function AdminKpiAssignments() {
   }
 
   async function handleToggle(role, kpi_key, currentEnabled) {
-    const url = "https://my-app-1-uzea.onrender.com/api/admin/kpis/assignments";
+    const url = "http://localhost:5000/api/admin/kpis/assignments";
     const headers = {
       "Content-Type": "application/json",
       Authorization: user?.token ? `Bearer ${user.token}` : "",

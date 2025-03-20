@@ -3,7 +3,7 @@ import React, { useState } from "react";
 import { Outlet, useLocation, useNavigate, Navigate } from "react-router-dom";
 import { useTheme } from "./context/ThemeContext";
 import { useAuth } from "./context/AuthContext";
-import DarkModeToggle from "./Components/DarkModeToggle";
+import DarkModeToggle from "./components/DarkModeToggle";
 
 const ProjectManagement = () => {
   const { darkMode } = useTheme();

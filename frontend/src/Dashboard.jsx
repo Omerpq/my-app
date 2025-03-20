@@ -5,13 +5,15 @@ import { getDashboardStats } from "./api";
 import { Navigate } from "react-router-dom";
 import { useAuth } from "./context/AuthContext";
 import { useLanguage } from "./context/LanguageContext";
-import ThreeDColumnChart from "./Components/ThreeDColumnChart";
-// Existing visualizations
-import ThreeDPieChart from "./Components/ThreeDPieChart";
-import GeoDistributionMap from "./Components/GeoDistributionMap";
+import ThreeDColumnChart from "./components/ThreeDColumnChart";
+import ThreeDPieChart from "./components/ThreeDPieChart";
+import GeoDistributionMap from "./components/GeoDistributionMap";
+import StockRequestOverviewChart from "./components/StockRequestOverviewChart"; // New import
 
 // NEW: Import the Eye icon from react-icons
 import { FaEye } from "react-icons/fa";
+import getStockRequestOverview from "./api/getStockRequestOverview"; // <-- import the utility
+import StockRequestOverviewSection from "./sections/StockRequestOverviewSection";
 
 // --------------------------
 // Helper: Returns a gradient class for key columns based on dark mode
@@ -30,7 +32,7 @@ const LowInventoryModal = ({ isOpen, onClose, darkMode }) => {
   useEffect(() => {
     if (isOpen) {
       document.body.style.overflow = "hidden";
-      fetch("https://my-app-1-uzea.onrender.com/api/inventory/lowstock")
+      fetch("http://localhost:5000/api/inventory/lowstock")
         .then((res) => res.json())
         .then((data) => setItems(data))
         .catch((err) =>
@@ -44,13 +46,12 @@ const LowInventoryModal = ({ isOpen, onClose, darkMode }) => {
     };
   }, [isOpen]);
 
-  if (!isOpen) return null;
-
   // Define orange gradient for the key columns
   const orangeGradient = darkMode
     ? "bg-gradient-to-r from-orange-500 to-orange-700 bg-clip-text text-transparent"
     : "bg-gradient-to-r from-orange-600 to-orange-900 bg-clip-text text-transparent";
 
+  if (!isOpen) return null;
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
       <div
@@ -112,7 +113,7 @@ const TotalHoursModal = ({ isOpen, onClose, darkMode }) => {
   useEffect(() => {
     if (isOpen) {
       document.body.style.overflow = "hidden";
-      fetch("https://my-app-1-uzea.onrender.com/api/projects/dashboard/hours")
+      fetch("http://localhost:5000/api/projects/dashboard/hours")
         .then((res) => res.json())
         .then((data) => setHoursDetails(data))
         .catch((err) =>
@@ -126,13 +127,12 @@ const TotalHoursModal = ({ isOpen, onClose, darkMode }) => {
     };
   }, [isOpen]);
 
-  if (!isOpen) return null;
-
   // Define purple gradient for the Hours Worked column
   const purpleGradient = darkMode
     ? "bg-gradient-to-r from-purple-400 to-purple-600 bg-clip-text text-transparent"
     : "bg-gradient-to-r from-purple-700 to-purple-500 bg-clip-text text-transparent";
 
+  if (!isOpen) return null;
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
       <div
@@ -201,7 +201,7 @@ const AvgCompletionModal = ({ isOpen, onClose, darkMode }) => {
   useEffect(() => {
     if (isOpen) {
       document.body.style.overflow = "hidden";
-      fetch("https://my-app-1-uzea.onrender.com/api/projects/dashboard/avg-completion")
+      fetch("http://localhost:5000/api/projects/dashboard/avg-completion")
         .then((res) => res.json())
         .then((data) => setAvgDetails(data))
         .catch((err) =>
@@ -295,7 +295,7 @@ const ActiveProjectsModal = ({ isOpen, onClose, darkMode }) => {
   useEffect(() => {
     if (isOpen) {
       document.body.style.overflow = "hidden";
-      fetch("https://my-app-1-uzea.onrender.com/api/projects/active")
+      fetch("http://localhost:5000/api/projects/active")
         .then((res) => res.json())
         .then((data) => setProjects(Array.isArray(data) ? data : []))
         .catch((err) => console.error("Failed to fetch active projects", err));
@@ -385,7 +385,7 @@ const CompletedProjectsModal = ({ isOpen, onClose, darkMode }) => {
   useEffect(() => {
     if (isOpen) {
       document.body.style.overflow = "hidden";
-      fetch("https://my-app-1-uzea.onrender.com/api/projects/completed")
+      fetch("http://localhost:5000/api/projects/completed")
         .then((res) => res.json())
         .then((data) => setProjects(Array.isArray(data) ? data : []))
         .catch((err) =>
@@ -469,7 +469,7 @@ const OverdueProjectsModal = ({ isOpen, onClose, darkMode }) => {
   useEffect(() => {
     if (isOpen) {
       document.body.style.overflow = "hidden";
-      fetch("https://my-app-1-uzea.onrender.com/api/projects/overdue")
+      fetch("http://localhost:5000/api/projects/overdue")
         .then((res) => res.json())
         .then((data) => setProjects(Array.isArray(data) ? data : []))
         .catch((err) => console.error("Failed to fetch overdue projects", err));
@@ -554,7 +554,7 @@ const PendingRequestsModal = ({ isOpen, onClose, darkMode }) => {
   useEffect(() => {
     if (isOpen) {
       document.body.style.overflow = "hidden";
-      fetch("https://my-app-1-uzea.onrender.com/api/projects/request_stock/pending")
+      fetch("http://localhost:5000/api/projects/request_stock/pending")
         .then((res) => res.json())
         .then((data) => setRequests(Array.isArray(data) ? data : []))
         .catch((err) => console.error("Failed to fetch pending requests", err));
@@ -643,11 +643,10 @@ const PendingRequestsModal = ({ isOpen, onClose, darkMode }) => {
 // --------------------------
 const ApprovedRequestsModal = ({ isOpen, onClose, darkMode }) => {
   const [requests, setRequests] = useState([]);
-
   useEffect(() => {
     if (isOpen) {
       document.body.style.overflow = "hidden";
-      fetch("https://my-app-1-uzea.onrender.com/api/projects/request_stock/approved")
+      fetch("http://localhost:5000/api/projects/request_stock/approved")
         .then((res) => res.json())
         .then((data) => setRequests(Array.isArray(data) ? data : []))
         .catch((err) => console.error("Failed to fetch approved requests", err));
@@ -658,22 +657,14 @@ const ApprovedRequestsModal = ({ isOpen, onClose, darkMode }) => {
       document.body.style.overflow = "auto";
     };
   }, [isOpen]);
-
   if (!isOpen) return null;
-
-  const keyGradient = darkMode
-    ? "bg-gradient-to-r from-green-400 to-blue-500 bg-clip-text text-transparent"
-    : "bg-gradient-to-r from-blue-800 to-blue-600 bg-clip-text text-transparent";
-
+  const keyGradient = getKeyGradient(darkMode);
   return (
-    <div className="fixed inset-0 z-50 flex items-start justify-center bg-black bg-opacity-50">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
       <div
-        className={`
-          ${darkMode ? "bg-gray-800 text-white" : "bg-white text-black"} 
-          rounded-lg shadow-lg max-w-4xl w-full p-6 pt-4 
-          mt-12 md:mt-8 
-          max-h-[90vh] overflow-auto
-        `}
+        className={`${
+          darkMode ? "bg-gray-800 text-white" : "bg-white text-black"
+        } rounded-lg shadow-lg max-w-4xl w-full p-6`}
       >
         <div className="flex justify-between items-center">
           <h3 className="text-xl font-bold">Approved Requests</h3>
@@ -754,7 +745,7 @@ const RejectedRequestsModal = ({ isOpen, onClose, darkMode }) => {
   useEffect(() => {
     if (isOpen) {
       document.body.style.overflow = "hidden";
-      fetch("https://my-app-1-uzea.onrender.com/api/projects/request_stock/rejected")
+      fetch("http://localhost:5000/api/projects/request_stock/rejected")
         .then((res) => res.json())
         .then((data) => setRequests(Array.isArray(data) ? data : []))
         .catch((err) => console.error("Failed to fetch rejected requests", err));
@@ -767,6 +758,7 @@ const RejectedRequestsModal = ({ isOpen, onClose, darkMode }) => {
   }, [isOpen]);
   if (!isOpen) return null;
 
+  // Define red gradient for key columns in Rejected Requests modal
   const redGradient = darkMode
     ? "bg-gradient-to-r from-red-500 to-red-700 bg-clip-text text-transparent"
     : "bg-gradient-to-r from-red-500 to-red-800 bg-clip-text text-transparent";
@@ -880,7 +872,7 @@ const DashboardSection = ({ title, darkMode, french, children, data }) => {
 };
 
 // --------------------------
-// KpiCard Component with Left Accent (unchanged)
+// KpiCard Component with Left Accent (unchanged from your reference)
 // --------------------------
 const KpiCard = ({ title, value, borderColor, actionIcon, onAction }) => {
   const { darkMode } = useTheme();
@@ -937,7 +929,17 @@ const Dashboard = () => {
       try {
         const data = await getDashboardStats();
         console.log("Fetched stats from API:", data);
+
+        // 2) Fetch the Stock Request Overview data from the new endpoint
+       const stockData = await getStockRequestOverview();
+       console.log("Fetched stock request overview:", stockData);
+       // 3) Merge it into your stats object
+       // 4) Set the combined stats in state
+       //data.stockRequestData = stockData;
+        //setStats(data);
+        data.stockRequestData = stockData;
         setStats(data);
+
       } catch (err) {
         setError(
           french
@@ -954,7 +956,7 @@ const Dashboard = () => {
 
   // Minimal addition: fetch inventory data & handle 404 or non-array
   useEffect(() => {
-    fetch("https://my-app-1-uzea.onrender.com/api/inventory/levels")
+    fetch("http://localhost:5000/api/inventory/levels")
       .then((res) => {
         if (!res.ok) {
           console.error("Inventory endpoint returned:", res.status);
@@ -1081,7 +1083,9 @@ const Dashboard = () => {
               onAction={() => setShowApprovedRequestsModal(true)}
             />
             <KpiCard
-              title={french ? "Demandes rejetées" : "Rejected Requests"}
+              title={
+                french ? "Demandes rejetées" : "Rejected Requests"
+              }
               value={stats?.rejectedRequests ?? 0}
               borderColor="border-red-700"
               actionIcon={<FaEye className="text-xl text-red-700" />}
@@ -1089,7 +1093,9 @@ const Dashboard = () => {
             />
             <KpiCard
               title={
-                french ? "Articles en rupture de stock" : "Low Inventory Items"
+                french
+                  ? "Articles en rupture de stock"
+                  : "Low Inventory Items"
               }
               value={stats?.lowInventoryItems ?? 0}
               borderColor="border-orange-500"
@@ -1140,14 +1146,17 @@ const Dashboard = () => {
         )}
       </main>
 
-      {/* Updated Dashboard Sections: Each in its own row */}
-      <div className="grid grid-cols-1 gap-0 m-2">
+      {/* First Row: Projects Status and Inventory Levels */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 m-2">
         <DashboardSection
           title={french ? "Répartition des projets" : "Projects Status"}
           darkMode={darkMode}
           french={french}
         >
-          <ThreeDPieChart data={stats?.projectsStatusData || []} darkMode={darkMode} />
+          <ThreeDPieChart
+            data={stats?.projectsStatusData || []}
+            darkMode={darkMode}
+          />
         </DashboardSection>
 
         <DashboardSection
@@ -1158,6 +1167,16 @@ const Dashboard = () => {
           <ThreeDColumnChart data={inventoryData || []} darkMode={darkMode} />
         </DashboardSection>
       </div>
+
+      {/* Second Row: Stock Request Overview */}
+      {/* Second Row: Stock Request Overview */}
+<div className="grid grid-cols-1 gap-4 m-2">
+  <StockRequestOverviewSection
+    stats={stats}
+    darkMode={darkMode}
+    french={french}
+  />
+</div>
 
       {/* Dashboard Section: Geographic Distribution */}
       <section
@@ -1171,20 +1190,59 @@ const Dashboard = () => {
             : "Projects Geographic Distribution"}
         </h2>
         <div className="mt-2">
-          <GeoDistributionMap darkMode={darkMode} data={stats?.projectLocations || []} />
+          <GeoDistributionMap
+            darkMode={darkMode}
+            data={stats?.projectLocations || []}
+          />
         </div>
       </section>
 
       {/* Modals */}
-      <ActiveProjectsModal isOpen={showActiveProjectsModal} onClose={() => setShowActiveProjectsModal(false)} darkMode={darkMode} />
-      <CompletedProjectsModal isOpen={showCompletedProjectsModal} onClose={() => setShowCompletedProjectsModal(false)} darkMode={darkMode} />
-      <OverdueProjectsModal isOpen={showOverdueProjectsModal} onClose={() => setShowOverdueProjectsModal(false)} darkMode={darkMode} />
-      <PendingRequestsModal isOpen={showPendingRequestsModal} onClose={() => setShowPendingRequestsModal(false)} darkMode={darkMode} />
-      <ApprovedRequestsModal isOpen={showApprovedRequestsModal} onClose={() => setShowApprovedRequestsModal(false)} darkMode={darkMode} />
-      <RejectedRequestsModal isOpen={showRejectedRequestsModal} onClose={() => setShowRejectedRequestsModal(false)} darkMode={darkMode} />
-      <LowInventoryModal isOpen={showLowInventoryModal} onClose={() => setShowLowInventoryModal(false)} darkMode={darkMode} />
-      <TotalHoursModal isOpen={showTotalHoursModal} onClose={() => setShowTotalHoursModal(false)} darkMode={darkMode} />
-      <AvgCompletionModal isOpen={showAvgCompletionModal} onClose={() => setShowAvgCompletionModal(false)} darkMode={darkMode} />
+      <ActiveProjectsModal
+        isOpen={showActiveProjectsModal}
+        onClose={() => setShowActiveProjectsModal(false)}
+        darkMode={darkMode}
+      />
+      <CompletedProjectsModal
+        isOpen={showCompletedProjectsModal}
+        onClose={() => setShowCompletedProjectsModal(false)}
+        darkMode={darkMode}
+      />
+      <OverdueProjectsModal
+        isOpen={showOverdueProjectsModal}
+        onClose={() => setShowOverdueProjectsModal(false)}
+        darkMode={darkMode}
+      />
+      <PendingRequestsModal
+        isOpen={showPendingRequestsModal}
+        onClose={() => setShowPendingRequestsModal(false)}
+        darkMode={darkMode}
+      />
+      <ApprovedRequestsModal
+        isOpen={showApprovedRequestsModal}
+        onClose={() => setShowApprovedRequestsModal(false)}
+        darkMode={darkMode}
+      />
+      <RejectedRequestsModal
+        isOpen={showRejectedRequestsModal}
+        onClose={() => setShowRejectedRequestsModal(false)}
+        darkMode={darkMode}
+      />
+      <LowInventoryModal
+        isOpen={showLowInventoryModal}
+        onClose={() => setShowLowInventoryModal(false)}
+        darkMode={darkMode}
+      />
+      <TotalHoursModal
+        isOpen={showTotalHoursModal}
+        onClose={() => setShowTotalHoursModal(false)}
+        darkMode={darkMode}
+      />
+      <AvgCompletionModal
+        isOpen={showAvgCompletionModal}
+        onClose={() => setShowAvgCompletionModal(false)}
+        darkMode={darkMode}
+      />
     </div>
   );
 };

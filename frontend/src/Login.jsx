@@ -8,6 +8,8 @@ import { useLanguage } from "./context/LanguageContext"; // Use global language 
 import "./Login.css";
 import EvolvexLogo from "./images/Evolvex_logo.png";
 
+
+
 export default function Login() {
   const { darkMode, toggleTheme } = useTheme();
   const { login: authLogin } = useAuth();
@@ -65,15 +67,16 @@ export default function Login() {
 
       setIsLoading(true);
       try {
-        const response = await fetch("https://my-app-1-uzea.onrender.com/api/auth/login", {
+        const response = await fetch("http://localhost:5000/api/auth/login", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ email, password }),
         });
         const data = await response.json();
         if (!response.ok) {
-          console.error("Login failed:", data);
-          setPasswordError(data.error || (french ? "Échec de la connexion" : "Login failed"));
+          setPasswordError(
+            data.error || (french ? "Échec de la connexion" : "Login failed")
+          );
         } else {
           localStorage.setItem("token", data.token);
           localStorage.setItem("user", JSON.stringify(data.user));
@@ -142,7 +145,8 @@ export default function Login() {
 
         {/* Logo */}
         <div className="flex justify-center">
-          <img src={EvolvexLogo} alt="Logo" className="w-28 mb-0" />
+        <img src={EvolvexLogo} alt="Logo" className="w-28 mb-0" />
+
         </div>
 
         {/* Form Title */}

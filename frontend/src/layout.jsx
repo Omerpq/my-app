@@ -2,7 +2,7 @@
 import React from "react";
 import { Outlet } from "react-router-dom";
 import GlobalNavigation from "./Components/GlobalNavigation";
-import TopNavbar from "./Components/TopNavBar"; 
+import TopNavbar from "./Components/TopNavbar"; 
 import { useTheme } from "./context/ThemeContext";
 
 const Layout = () => {

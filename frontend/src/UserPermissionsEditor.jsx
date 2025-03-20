@@ -5,7 +5,6 @@ import { useAuth } from "./context/AuthContext";
 import { useTheme } from "./context/ThemeContext";
 
 // -------------- DarkModeToggleWrapper --------------
-// Copied from UserManagement.jsx for consistency
 const DarkModeToggleWrapper = () => {
   const { darkMode, toggleTheme } = useTheme();
   return (
@@ -60,6 +59,7 @@ const PERMISSIONS_GROUPS = {
     "canAddStockEntry",
     "canRequestStock",
     "canViewStockRequests",
+    "canViewPickupRequests", // <-- New permission added here
     "canApproveStockRequests",
     "canDispatchStock",
     "canConfirmDelivery",
@@ -92,7 +92,8 @@ const PERMISSION_LABELS = {
   canViewStock: "View Stock",
   canAddStockEntry: "Add Stock",
   canRequestStock: "Request Stock",
-  canViewStockRequests: "View Requests",
+  canViewStockRequests: "View Stock Requests",
+  canViewPickupRequests: "View Pickup Requests", // <-- New label added here
   canApproveStockRequests: "Approve Requests",
   canDispatchStock: "Dispatches",
   canConfirmDelivery: "View Delivery",
@@ -100,15 +101,7 @@ const PERMISSION_LABELS = {
   canViewReports: "View Reports",
 };
 
-// Define group-specific enabled chip colors
-const GROUP_ENABLED_COLORS = {
-  "Dashboard": "bg-indigo-500 hover:bg-indigo-600",
-  "User Management": "bg-blue-500 hover:bg-blue-600",
-  "Project Management": "bg-orange-500 hover:bg-orange-600",
-  "Inventory Management": "bg-teal-500 hover:bg-teal-600",
-};
-
-const BASE_URL = "https://my-app-1-uzea.onrender.com/api/users";
+const BASE_URL = "http://localhost:5000/api/users";
 
 const UserPermissionsEditor = () => {
   const { user: currentUser } = useAuth();
@@ -224,9 +217,17 @@ const UserPermissionsEditor = () => {
     return `${baseClasses} ${enabled ? enabledClasses : disabledClasses}`;
   };
 
+  // Define group-specific enabled chip colors
+  const GROUP_ENABLED_COLORS = {
+    "Dashboard": "bg-indigo-500 hover:bg-indigo-600",
+    "User Management": "bg-blue-500 hover:bg-blue-600",
+    "Project Management": "bg-orange-500 hover:bg-orange-600",
+    "Inventory Management": "bg-teal-500 hover:bg-teal-600",
+  };
+
   return (
     <div style={containerStyle} className="rounded-xl shadow-md border min-h-screen transition-all duration-500">
-      {/* Header - copied from UserManagement.jsx */}
+      {/* Header */}
       <header
         className={`${darkMode ? "bg-gray-800 text-white border-gray-700" : "bg-white text-gray-900 border-gray-200"}
           flex justify-between items-center p-6 shadow-lg border`}

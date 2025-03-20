@@ -9,7 +9,7 @@ import ProjectManagement from "./ProjectManagement";
 import ForgotPassword from "./ForgotPassword";
 import ResetPassword from "./ResetPassword";
 import ProtectedRoute from "./ProtectedRoute";
-import Layout from "./layout";
+import Layout from "./Layout";
 import { LanguageProvider } from "./context/LanguageContext";
 import FormSelection from "./Components/FormSelection";
 import DynamicForm from "./Components/DynamicForm";

@@ -73,7 +73,7 @@ export default function ResetPassword() {
     //}, 1500);
    
     // Replacing the above "Simulate API Call..." code with the following one.
-    fetch("http://localhost:5000/api/auth/reset-password",
+      fetch("https://my-app-1-uzea.onrender.com/api/auth/reset-password",
     { method: "POST", headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ token, password }) })
     .then((response) => response.json()) .then((data) => { setIsLoading(false);

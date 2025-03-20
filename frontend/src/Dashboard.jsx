@@ -5,15 +5,18 @@ import { getDashboardStats } from "./api";
 import { Navigate } from "react-router-dom";
 import { useAuth } from "./context/AuthContext";
 import { useLanguage } from "./context/LanguageContext";
-import ThreeDColumnChart from "./Components/ThreeDColumnChart";
-import ThreeDPieChart from "./Components/ThreeDPieChart";
-import GeoDistributionMap from "./Components/GeoDistributionMap";
-import StockRequestOverviewChart from "./Components/StockRequestOverviewChart"; // New import
+import ThreeDColumnChart from "./components/ThreeDColumnChart";
+import ThreeDPieChart from "./components/ThreeDPieChart";
+import GeoDistributionMap from "./components/GeoDistributionMap";
+import StockRequestOverviewChart from "./components/StockRequestOverviewChart"; // New import
 
 // NEW: Import the Eye icon from react-icons
 import { FaEye } from "react-icons/fa";
 import getStockRequestOverview from "./api/getStockRequestOverview"; // <-- import the utility
 import StockRequestOverviewSection from "./sections/StockRequestOverviewSection";
+
+// Define the production base URL here:
+const BASE_URL = "https://my-app-1-uzea.onrender.com";
 
 // --------------------------
 // Helper: Returns a gradient class for key columns based on dark mode
@@ -32,7 +35,7 @@ const LowInventoryModal = ({ isOpen, onClose, darkMode }) => {
   useEffect(() => {
     if (isOpen) {
       document.body.style.overflow = "hidden";
-      fetch("http://localhost:5000/api/inventory/lowstock")
+      fetch(`${BASE_URL}/api/inventory/lowstock`)
         .then((res) => res.json())
         .then((data) => setItems(data))
         .catch((err) =>
@@ -113,7 +116,7 @@ const TotalHoursModal = ({ isOpen, onClose, darkMode }) => {
   useEffect(() => {
     if (isOpen) {
       document.body.style.overflow = "hidden";
-      fetch("http://localhost:5000/api/projects/dashboard/hours")
+      fetch(`${BASE_URL}/api/projects/dashboard/hours`)
         .then((res) => res.json())
         .then((data) => setHoursDetails(data))
         .catch((err) =>
@@ -201,7 +204,7 @@ const AvgCompletionModal = ({ isOpen, onClose, darkMode }) => {
   useEffect(() => {
     if (isOpen) {
       document.body.style.overflow = "hidden";
-      fetch("http://localhost:5000/api/projects/dashboard/avg-completion")
+      fetch(`${BASE_URL}/api/projects/dashboard/avg-completion`)
         .then((res) => res.json())
         .then((data) => setAvgDetails(data))
         .catch((err) =>
@@ -295,7 +298,7 @@ const ActiveProjectsModal = ({ isOpen, onClose, darkMode }) => {
   useEffect(() => {
     if (isOpen) {
       document.body.style.overflow = "hidden";
-      fetch("http://localhost:5000/api/projects/active")
+      fetch(`${BASE_URL}/api/projects/active`)
         .then((res) => res.json())
         .then((data) => setProjects(Array.isArray(data) ? data : []))
         .catch((err) => console.error("Failed to fetch active projects", err));
@@ -385,7 +388,7 @@ const CompletedProjectsModal = ({ isOpen, onClose, darkMode }) => {
   useEffect(() => {
     if (isOpen) {
       document.body.style.overflow = "hidden";
-      fetch("http://localhost:5000/api/projects/completed")
+      fetch(`${BASE_URL}/api/projects/completed`)
         .then((res) => res.json())
         .then((data) => setProjects(Array.isArray(data) ? data : []))
         .catch((err) =>
@@ -469,7 +472,7 @@ const OverdueProjectsModal = ({ isOpen, onClose, darkMode }) => {
   useEffect(() => {
     if (isOpen) {
       document.body.style.overflow = "hidden";
-      fetch("http://localhost:5000/api/projects/overdue")
+      fetch(`${BASE_URL}/api/projects/overdue`)
         .then((res) => res.json())
         .then((data) => setProjects(Array.isArray(data) ? data : []))
         .catch((err) => console.error("Failed to fetch overdue projects", err));
@@ -554,7 +557,7 @@ const PendingRequestsModal = ({ isOpen, onClose, darkMode }) => {
   useEffect(() => {
     if (isOpen) {
       document.body.style.overflow = "hidden";
-      fetch("http://localhost:5000/api/projects/request_stock/pending")
+      fetch(`${BASE_URL}/api/projects/request_stock/pending`)
         .then((res) => res.json())
         .then((data) => setRequests(Array.isArray(data) ? data : []))
         .catch((err) => console.error("Failed to fetch pending requests", err));
@@ -646,10 +649,12 @@ const ApprovedRequestsModal = ({ isOpen, onClose, darkMode }) => {
   useEffect(() => {
     if (isOpen) {
       document.body.style.overflow = "hidden";
-      fetch("http://localhost:5000/api/projects/request_stock/approved")
+      fetch(`${BASE_URL}/api/projects/request_stock/approved`)
         .then((res) => res.json())
         .then((data) => setRequests(Array.isArray(data) ? data : []))
-        .catch((err) => console.error("Failed to fetch approved requests", err));
+        .catch((err) =>
+          console.error("Failed to fetch approved requests", err)
+        );
     } else {
       document.body.style.overflow = "auto";
     }
@@ -745,7 +750,7 @@ const RejectedRequestsModal = ({ isOpen, onClose, darkMode }) => {
   useEffect(() => {
     if (isOpen) {
       document.body.style.overflow = "hidden";
-      fetch("http://localhost:5000/api/projects/request_stock/rejected")
+      fetch(`${BASE_URL}/api/projects/request_stock/rejected`)
         .then((res) => res.json())
         .then((data) => setRequests(Array.isArray(data) ? data : []))
         .catch((err) => console.error("Failed to fetch rejected requests", err));
@@ -872,7 +877,7 @@ const DashboardSection = ({ title, darkMode, french, children, data }) => {
 };
 
 // --------------------------
-// KpiCard Component with Left Accent (unchanged from your reference)
+// KpiCard Component with Left Accent (unchanged)
 // --------------------------
 const KpiCard = ({ title, value, borderColor, actionIcon, onAction }) => {
   const { darkMode } = useTheme();
@@ -931,15 +936,12 @@ const Dashboard = () => {
         console.log("Fetched stats from API:", data);
 
         // 2) Fetch the Stock Request Overview data from the new endpoint
-       const stockData = await getStockRequestOverview();
-       console.log("Fetched stock request overview:", stockData);
-       // 3) Merge it into your stats object
-       // 4) Set the combined stats in state
-       //data.stockRequestData = stockData;
-        //setStats(data);
+        const stockData = await getStockRequestOverview();
+        console.log("Fetched stock request overview:", stockData);
+        // 3) Merge it into your stats object
         data.stockRequestData = stockData;
+        // 4) Set the combined stats in state
         setStats(data);
-
       } catch (err) {
         setError(
           french
@@ -956,7 +958,7 @@ const Dashboard = () => {
 
   // Minimal addition: fetch inventory data & handle 404 or non-array
   useEffect(() => {
-    fetch("http://localhost:5000/api/inventory/levels")
+    fetch(`${BASE_URL}/api/inventory/levels`)
       .then((res) => {
         if (!res.ok) {
           console.error("Inventory endpoint returned:", res.status);
@@ -1079,13 +1081,11 @@ const Dashboard = () => {
               title={french ? "Demandes approuvées" : "Approved Requests"}
               value={stats?.approvedRequests ?? 0}
               borderColor="border-green-700"
-              actionIcon={<FaEye className="text-xl text-green-600" />}
+              actionIcon={<FaEye className="text-xl text-green-500" />}
               onAction={() => setShowApprovedRequestsModal(true)}
             />
             <KpiCard
-              title={
-                french ? "Demandes rejetées" : "Rejected Requests"
-              }
+              title={french ? "Demandes rejetées" : "Rejected Requests"}
               value={stats?.rejectedRequests ?? 0}
               borderColor="border-red-700"
               actionIcon={<FaEye className="text-xl text-red-700" />}
@@ -1169,14 +1169,13 @@ const Dashboard = () => {
       </div>
 
       {/* Second Row: Stock Request Overview */}
-      {/* Second Row: Stock Request Overview */}
-<div className="grid grid-cols-1 gap-4 m-2">
-  <StockRequestOverviewSection
-    stats={stats}
-    darkMode={darkMode}
-    french={french}
-  />
-</div>
+      <div className="grid grid-cols-1 gap-4 m-2">
+        <StockRequestOverviewSection
+          stats={stats}
+          darkMode={darkMode}
+          french={french}
+        />
+      </div>
 
       {/* Dashboard Section: Geographic Distribution */}
       <section

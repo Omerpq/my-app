@@ -140,7 +140,8 @@ const ReportCard = ({ title, headers, data, keys }) => {
 const InventoryManagement = () => {
   const { darkMode } = useTheme();
   const { user } = useAuth();
-  const baseUrl = import.meta.env.VITE_BACKEND_URL || "http://localhost:5000";
+  const baseUrl = import.meta.env.VITE_BACKEND_URL || "https://my-app-1-uzea.onrender.com";
+
 
   // Guard if user is not present
   if (!user) return <Navigate to="/login" replace />;

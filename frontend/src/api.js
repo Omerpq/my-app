@@ -64,7 +64,7 @@ export const sendUserInfoEmail = async (email) => {
 // ----- Dashboard Stats API Function -----
 // Minimal change: Now fetches from the production endpoint for projects (without /api)
 export const getDashboardStats = async () => {
-  const response = await fetch(`${API_BASE}/projects/dashboard`);
+  const response = await fetch(`${API_BASE}/api/projects/dashboard`);
   if (!response.ok) {
     throw new Error("Failed to fetch dashboard stats");
   }

@@ -8,7 +8,7 @@ import { useLanguage } from "./context/LanguageContext";
 import ThreeDColumnChart from "./Components/ThreeDColumnChart";
 import ThreeDPieChart from "./Components/ThreeDPieChart";
 import GeoDistributionMap from "./Components/GeoDistributionMap";
-import StockRequestOverviewChart from "./components/StockRequestOverviewChart"; // New import
+import StockRequestOverviewChart from "./Components/StockRequestOverviewChart"; // New import
 
 // NEW: Import the Eye icon from react-icons
 import { FaEye } from "react-icons/fa";

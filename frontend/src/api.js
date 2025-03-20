@@ -1,5 +1,5 @@
 // src/api.js
-const API_BASE = "https://my-app-1-uzea.onrender.com/api";
+const API_BASE = "https://my-app-1-uzea.onrender.com";
 // Actual implementation –
 export const getUsers = async () => {
   const response = await fetch(`${API_BASE}/api/users`); // Still using /api for users

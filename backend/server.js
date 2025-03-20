@@ -133,7 +133,7 @@ app.post("/api/auth/forgot-password", async (req, res) => {
       [user.id, token, expiresAt]
     );
 
-    const resetLink = `http://localhost:5173/reset-password/${token}`;
+    const resetLink = `https://my-app-cpl9.vercel.app/reset-password/${token}`;
     console.log(`Password reset link for ${email}: ${resetLink}`);
 
     await sendResetEmail(email, resetLink);

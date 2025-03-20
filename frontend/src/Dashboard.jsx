@@ -958,7 +958,7 @@ const Dashboard = () => {
   // Minimal addition: fetch inventory data & handle 404 or non-array
   useEffect(() => {
     //fetch(`${BASE_URL}/api/inventory/levels`)
-    fetch("https://m-app-1-uzea.onrender.com/api/inventory/levels")
+    fetch("https://my-app-1-uzea.onrender.com/api/inventory/levels")
       .then((res) => {
         if (!res.ok) {
           console.error("Inventory endpoint returned:", res.status);

@@ -1,9 +1,9 @@
 // src/api.js
-const API_BASE = "https://my-app-1-uzea.onrender.com";
+const API_BASE = "https://my-app-1-uzea.onrender.com"; // Removed "/api"
 
 // Actual implementation –
 export const getUsers = async () => {
-  const response = await fetch(`${API_BASE}/users`);
+  const response = await fetch(`${API_BASE}/api/users`); // Still using /api for users
   if (!response.ok) {
     throw new Error("Failed to fetch users");
   }
@@ -12,7 +12,7 @@ export const getUsers = async () => {
 
 // ----- User Management API Functions -----
 export const createUser = async (userData) => {
-  const response = await fetch(`${API_BASE}/users`, {
+  const response = await fetch(`${API_BASE}/api/users`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(userData),
@@ -28,7 +28,7 @@ export const updateUser = async (id, updatedData) => {
   if (!id) {
     throw new Error("Invalid user ID");
   }
-  const response = await fetch(`${API_BASE}/users/${id}`, {
+  const response = await fetch(`${API_BASE}/api/users/${id}`, {
     method: "PUT",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(updatedData),
@@ -40,7 +40,7 @@ export const updateUser = async (id, updatedData) => {
 };
 
 export const deleteUser = async (id) => {
-  const response = await fetch(`${API_BASE}/users/${id}`, {
+  const response = await fetch(`${API_BASE}/api/users/${id}`, {
     method: "DELETE",
   });
   if (!response.ok) {
@@ -51,7 +51,7 @@ export const deleteUser = async (id) => {
 
 // ----- Send Account Info Email -----
 export const sendUserInfoEmail = async (email) => {
-  const response = await fetch(`${API_BASE}/auth/send-account-info`, {
+  const response = await fetch(`${API_BASE}/api/auth/send-account-info`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ email }),
@@ -63,7 +63,7 @@ export const sendUserInfoEmail = async (email) => {
 };
 
 // ----- Dashboard Stats API Function -----
-// Minimal change: Now fetches from the real endpoint instead of dummy data.
+// Minimal change: Now fetches from the production endpoint for projects (without /api)
 export const getDashboardStats = async () => {
   const response = await fetch(`${API_BASE}/projects/dashboard`);
   if (!response.ok) {

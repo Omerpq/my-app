@@ -3,7 +3,7 @@ import React, { useState, useEffect } from "react";
 import { useTheme } from "../context/ThemeContext";
 import { useAuth } from "../context/AuthContext";
 
-const PickupRequests = () => {
+const PickupRequests = ({ onMarkSeen }) => {  // Accept onMarkSeen prop
   const { darkMode } = useTheme();
   const { user } = useAuth();
   if (!user) return null;
@@ -20,11 +20,15 @@ const PickupRequests = () => {
       .then((data) => {
         // Filter only pickup requests (assuming request_type is "pickup")
         const pickupData = data.filter(
-          (row) => row.request_type && row.request_type.toLowerCase() === "pickup"
+          (row) =>
+            row.request_type &&
+            row.request_type.toLowerCase() === "pickup"
         );
         setRows(pickupData);
       })
-      .catch((err) => console.error("Error fetching pickup requests:", err));
+      .catch((err) =>
+        console.error("Error fetching pickup requests:", err)
+      );
   }, [baseUrl]);
 
   // Search, sort states (minimal implementation)
@@ -71,9 +75,13 @@ const PickupRequests = () => {
   const getSortIcon = (field) => {
     if (sortField === field) {
       return sortOrder === "asc" ? (
-        <span className={`ml-1 font-bold ${darkMode ? "text-blue-300" : "text-blue-600"}`}>↑</span>
+        <span className={`ml-1 font-bold ${darkMode ? "text-blue-300" : "text-blue-600"}`}>
+          ↑
+        </span>
       ) : (
-        <span className={`ml-1 font-bold ${darkMode ? "text-blue-300" : "text-blue-600"}`}>↓</span>
+        <span className={`ml-1 font-bold ${darkMode ? "text-blue-300" : "text-blue-600"}`}>
+          ↓
+        </span>
       );
     }
     return <span className={`ml-1 ${darkMode ? "text-blue-400" : "text-blue-500"}`}>↕</span>;
@@ -94,6 +102,9 @@ const PickupRequests = () => {
             r.id === request.id ? { ...r, status: "Seen by Driver" } : r
           )
         );
+        if (typeof onMarkSeen === "function") {
+          onMarkSeen();
+        }
       }
     } catch (error) {
       console.error("Error marking pickup request as seen:", error);
@@ -185,7 +196,9 @@ const PickupRequests = () => {
                       : ""}
                   </td>
                   <td className="px-4 py-2 text-xs whitespace-normal break-words">
-                    {request.delivery_location || "-"}
+                    {/* For pickup requests, show the Destination value.
+                        If a 'destination' field exists, use it; otherwise fallback to delivery_location */}
+                    {request.destination || request.delivery_location || "-"}
                   </td>
                   <td className="px-4 py-2 text-xs whitespace-normal break-words">
                     {request.pickup_datetime

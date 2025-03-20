@@ -1,8 +1,8 @@
+// src/Components/RequestStock.jsx
 import React, { useState, useEffect, useRef } from "react";
 import { useTheme } from "../context/ThemeContext";
 import { useAuth } from "../context/AuthContext";
 
-// Helper function to get local time
 const getLocalDateTime = () => {
   const now = new Date();
   const year = now.getFullYear();
@@ -13,23 +13,21 @@ const getLocalDateTime = () => {
   return `${year}-${month}-${day}T${hours}:${minutes}`;
 };
 
-const RequestStock = () => {
+const RequestStock = ({
+  onNewPickupRequest,    // Callback to update pickup badge immediately
+  onNewStockRequest,     // Callback to update stock badge immediately
+}) => {
   const { darkMode } = useTheme();
   const { user } = useAuth();
   const baseUrl = import.meta.env.VITE_BACKEND_URL;
 
-  // Check for permission to show the form.
   if (!user || (!user.permissions?.includes("canRequestStock") && user.role !== "Administrator")) {
     return null;
   }
 
-  // Use user's data for the Requesting Staff field.
   const siteWorkerValue = `${user.name} - ${user.role} - (ID: ${user.id})`;
-
-  // NEW: State for request type selection ("stock", "pickup", or "both")
   const [requestType, setRequestType] = useState("stock");
 
-  // State for stock request data.
   const [requestData, setRequestData] = useState({
     siteWorker: siteWorkerValue,
     requestDate: getLocalDateTime(),
@@ -38,7 +36,7 @@ const RequestStock = () => {
     quantity: "",
     deliveryLocation: "",
     urgency: "",
-    jobId: ""
+    jobId: "",
   });
 
   const [availableQuantity, setAvailableQuantity] = useState(null);
@@ -47,16 +45,11 @@ const RequestStock = () => {
   const [loading, setLoading] = useState(false);
   const [submitted, setSubmitted] = useState(false);
 
-  // 2) List of available item names from inventory.
   const [itemNames, setItemNames] = useState([]);
-
-  // 3) List of projects for the dropdown.
   const [projects, setProjects] = useState([]);
 
-  // NEW: State for Pickup Request field.
   const [pickupDateTime, setPickupDateTime] = useState("");
 
-  // Input styling.
   const inputClass = `w-full px-4 py-2 mt-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400 transition-all duration-500 ${
     darkMode
       ? "bg-gray-700 text-white border-gray-600"
@@ -76,7 +69,6 @@ const RequestStock = () => {
   const requestDateRef = useRef(null);
   const urgencyRef = useRef(null);
 
-  // For arrow navigation.
   const handleVerticalNavigation = (e, fieldName) => {
     if (e.key === "Enter" || e.key === "ArrowDown") {
       e.preventDefault();
@@ -117,7 +109,7 @@ const RequestStock = () => {
     }
   };
 
-  // 4) Fetch item names from inventory.
+  // Fetch item names from inventory.
   useEffect(() => {
     const fetchItemNames = async () => {
       try {
@@ -134,7 +126,7 @@ const RequestStock = () => {
     fetchItemNames();
   }, [baseUrl]);
 
-  // 5) Fetch projects.
+  // Fetch projects.
   useEffect(() => {
     const fetchProjects = async () => {
       try {
@@ -150,13 +142,25 @@ const RequestStock = () => {
     fetchProjects();
   }, [baseUrl]);
 
-  // 6) When user picks an item name from the dropdown (only for stock requests).
+  // When project (jobId) changes, auto-populate deliveryLocation with project's address.
+  // (Removed requestType from dependency to always update based on selected project)
+  useEffect(() => {
+    if (requestData.jobId) {
+      const selectedProject = projects.find((proj) => proj.job_id === requestData.jobId);
+      if (selectedProject) {
+        setRequestData((prev) => ({ ...prev, deliveryLocation: selectedProject.address }));
+      } else {
+        setRequestData((prev) => ({ ...prev, deliveryLocation: "" }));
+      }
+    }
+  }, [requestData.jobId, projects]);
+
   const handleItemNameChange = (e) => {
     const selectedName = e.target.value;
     setRequestData((prev) => ({
       ...prev,
       itemName: selectedName,
-      itemCode: ""
+      itemCode: "",
     }));
     setMessage("");
     setError("");
@@ -164,7 +168,6 @@ const RequestStock = () => {
     checkExistingName(selectedName.trim());
   };
 
-  // 7) Lookup item code & available quantity by item name.
   const checkExistingName = async (itemName) => {
     if (!itemName) return;
     try {
@@ -178,7 +181,7 @@ const RequestStock = () => {
       if (matched) {
         setRequestData((prev) => ({
           ...prev,
-          itemCode: matched.item_code.trim()
+          itemCode: matched.item_code.trim(),
         }));
         const qtyRes = await fetch(`${baseUrl}/api/inventory/item/${matched.item_code.trim()}`);
         if (qtyRes.ok) {
@@ -193,7 +196,6 @@ const RequestStock = () => {
     }
   };
 
-  // For other input changes.
   const handleChange = (e) => {
     const { name, value } = e.target;
     setRequestData({ ...requestData, [name]: value });
@@ -201,9 +203,9 @@ const RequestStock = () => {
     setError("");
   };
 
-  // Form validation depends on the selected request type.
+  // Validate form based on request type.
   let isStockValid = true;
-  if (requestType === "stock" || requestType === "both") {
+  if (requestType === "stock") {
     isStockValid =
       requestData.siteWorker.trim() &&
       requestData.requestDate.trim() &&
@@ -214,12 +216,15 @@ const RequestStock = () => {
       requestData.jobId.trim();
   }
   let isPickupValid = true;
-  if (requestType === "pickup" || requestType === "both") {
-    isPickupValid = requestData.jobId.trim() && pickupDateTime.trim();
+  if (requestType === "pickup") {
+    // For pickup, the Destination (deliveryLocation) must not be empty.
+    isPickupValid =
+      requestData.jobId.trim() &&
+      pickupDateTime.trim() &&
+      requestData.deliveryLocation.trim();
   }
   const isFormValid = isStockValid && isPickupValid;
 
-  // Submit handler builds the payload conditionally.
   const handleSubmit = async (e) => {
     e.preventDefault();
     setMessage("");
@@ -231,33 +236,31 @@ const RequestStock = () => {
     }
 
     const parsedQty = parseInt(requestData.quantity, 10);
-    if ((requestType === "stock" || requestType === "both") && (isNaN(parsedQty) || parsedQty <= 0)) {
+    if (requestType === "stock" && (isNaN(parsedQty) || parsedQty <= 0)) {
       setError("Quantity must be a positive number.");
       return;
     }
-    if ((requestType === "stock" || requestType === "both") && availableQuantity !== null && parsedQty > availableQuantity) {
+    if (requestType === "stock" && availableQuantity !== null && parsedQty > availableQuantity) {
       setError(
         `Entered quantity (${parsedQty}) exceeds available stock (${availableQuantity}). Please enter a quantity less than or equal to the available stock.`
       );
       return;
     }
 
-    // Build payload conditionally based on requestType.
     const payload = {
       site_worker: requestData.siteWorker.trim(),
       request_date: requestData.requestDate.trim(),
       item_code: requestType === "pickup" ? "" : requestData.itemCode.trim(),
       item_name: requestType === "pickup" ? "" : requestData.itemName.trim(),
       quantity: requestType === "pickup" ? 0 : parsedQty,
-      delivery_location: requestType === "pickup" ? "" : requestData.deliveryLocation.trim(),
+      // For both types, delivery_location is set from the auto-populated value.
+      delivery_location: requestData.deliveryLocation.trim(),
       urgency: requestType === "pickup" ? "Normal" : requestData.urgency.trim() || "Normal",
       requestor_email: user.email,
-      status: "Pending",
-      approval_status: "Pending",
       job_id: requestData.jobId.trim(),
-      pickup_requested: requestType === "pickup" || requestType === "both",
-      pickup_datetime: (requestType === "pickup" || requestType === "both") ? pickupDateTime : null,
-      request_type: requestType
+      pickup_requested: requestType === "pickup",
+      pickup_datetime: requestType === "pickup" ? pickupDateTime : null,
+      request_type: requestType,
     };
 
     setLoading(true);
@@ -265,7 +268,7 @@ const RequestStock = () => {
       const res = await fetch(`${baseUrl}/api/request_stock`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload)
+        body: JSON.stringify(payload),
       });
       const data = await res.json();
       if (!res.ok) {
@@ -273,6 +276,12 @@ const RequestStock = () => {
       } else {
         setMessage("Request submitted");
         setSubmitted(true);
+        if (requestType === "stock" && typeof onNewStockRequest === "function") {
+          onNewStockRequest();
+        }
+        if (requestType === "pickup" && typeof onNewPickupRequest === "function") {
+          onNewPickupRequest();
+        }
       }
     } catch (err) {
       console.error("Error submitting request:", err);
@@ -291,7 +300,7 @@ const RequestStock = () => {
       quantity: "",
       deliveryLocation: "",
       urgency: "",
-      jobId: ""
+      jobId: "",
     });
     setAvailableQuantity(null);
     setSubmitted(false);
@@ -326,7 +335,7 @@ const RequestStock = () => {
               onChange={(e) => setRequestType(e.target.value)}
               className="form-radio"
             />
-            <span className="ml-2">Stock Request Only</span>
+            <span className="ml-2">Stock Request</span>
           </label>
           <label className="inline-flex items-center">
             <input
@@ -337,18 +346,7 @@ const RequestStock = () => {
               onChange={(e) => setRequestType(e.target.value)}
               className="form-radio"
             />
-            <span className="ml-2">Pickup Request Only</span>
-          </label>
-          <label className="inline-flex items-center">
-            <input
-              type="radio"
-              name="requestType"
-              value="both"
-              checked={requestType === "both"}
-              onChange={(e) => setRequestType(e.target.value)}
-              className="form-radio"
-            />
-            <span className="ml-2">Both</span>
+            <span className="ml-2">Pick-up Request</span>
           </label>
         </div>
       </div>
@@ -361,7 +359,16 @@ const RequestStock = () => {
         <select
           name="jobId"
           value={requestData.jobId}
-          onChange={(e) => setRequestData((prev) => ({ ...prev, jobId: e.target.value }))}
+          onChange={(e) => {
+            const selectedJobId = e.target.value;
+            setRequestData((prev) => ({ ...prev, jobId: selectedJobId }));
+            const selectedProject = projects.find((proj) => proj.job_id === selectedJobId);
+            if (selectedProject) {
+              setRequestData((prev) => ({ ...prev, deliveryLocation: selectedProject.address }));
+            } else {
+              setRequestData((prev) => ({ ...prev, deliveryLocation: "" }));
+            }
+          }}
           className={selectClass}
           required
         >
@@ -391,10 +398,9 @@ const RequestStock = () => {
             />
           </div>
 
-          {/* Conditionally render stock-specific fields if requestType is not "pickup" */}
-          {requestType !== "pickup" && (
+          {/* Stock-only fields */}
+          {requestType === "stock" && (
             <>
-              {/* Item Name Dropdown */}
               <div>
                 <label className={`block font-semibold ${darkMode ? "text-gray-300" : "text-gray-700"}`}>
                   Item Name <span className="text-red-500">*</span>
@@ -416,7 +422,6 @@ const RequestStock = () => {
                 </select>
               </div>
 
-              {/* Item Code (auto-populated) */}
               <div>
                 <label className={`block font-semibold ${darkMode ? "text-gray-300" : "text-gray-700"}`}>
                   Item Code <span className="text-red-500">*</span>
@@ -427,12 +432,13 @@ const RequestStock = () => {
                   value={requestData.itemCode}
                   readOnly
                   className={`w-full px-4 py-2 mt-2 border rounded-lg cursor-not-allowed focus:outline-none ${
-                    darkMode ? "bg-gray-700 text-gray-300 border-gray-600" : "bg-gray-200 text-gray-500 border-gray-300"
+                    darkMode
+                      ? "bg-gray-700 text-gray-300 border-gray-600"
+                      : "bg-gray-200 text-gray-500 border-gray-300"
                   }`}
                 />
               </div>
 
-              {/* Total Quantity Available */}
               <div>
                 <label className={`block font-semibold ${darkMode ? "text-gray-300" : "text-gray-700"}`}>
                   Total Quantity Available
@@ -451,7 +457,6 @@ const RequestStock = () => {
                 />
               </div>
 
-              {/* Quantity */}
               <div>
                 <label className={`block font-semibold ${darkMode ? "text-gray-300" : "text-gray-700"}`}>
                   Quantity <span className="text-red-500">*</span>
@@ -470,24 +475,25 @@ const RequestStock = () => {
                 />
               </div>
 
-              {/* Delivery Location */}
               <div>
                 <label className={`block font-semibold ${darkMode ? "text-gray-300" : "text-gray-700"}`}>
                   Delivery Location <span className="text-red-500">*</span>
                 </label>
+                {/* Read-only field auto-populated from selected project */}
                 <input
                   type="text"
                   name="deliveryLocation"
                   value={requestData.deliveryLocation}
-                  onChange={handleChange}
-                  onKeyDown={(e) => handleVerticalNavigation(e, "deliveryLocation")}
-                  ref={deliveryLocationRef}
-                  placeholder="Enter delivery location"
-                  className={inputClass}
+                  readOnly
+                  className={`w-full px-4 py-2 mt-2 border rounded-lg cursor-not-allowed focus:outline-none ${
+                    darkMode
+                      ? "bg-gray-700 text-gray-300 border-gray-600"
+                      : "bg-gray-200 text-gray-500 border-gray-300"
+                  }`}
+                  tabIndex={-1}
                 />
               </div>
 
-              {/* Urgency */}
               <div>
                 <label className={`block font-semibold ${darkMode ? "text-gray-300" : "text-gray-700"}`}>
                   Urgency (optional)
@@ -506,22 +512,42 @@ const RequestStock = () => {
             </>
           )}
 
-          {/* Render Pickup Date/Time if requestType is "pickup" or "both" */}
-          {(requestType === "pickup" || requestType === "both") && (
-            <div>
-              <label className={`block font-semibold ${darkMode ? "text-gray-300" : "text-gray-700"}`}>
-                Pickup Date &amp; Time <span className="text-red-500">*</span>
-              </label>
-              <input
-                type="datetime-local"
-                value={pickupDateTime}
-                onChange={(e) => setPickupDateTime(e.target.value)}
-                className={inputClass}
-              />
-            </div>
+          {/* Pickup-only fields */}
+          {requestType === "pickup" && (
+            <>
+              {/* Auto-populated Destination field from project's address */}
+              <div>
+                <label className={`block font-semibold ${darkMode ? "text-gray-300" : "text-gray-700"}`}>
+                  Destination <span className="text-red-500">*</span>
+                </label>
+                <input
+                  type="text"
+                  name="deliveryLocation"
+                  value={requestData.deliveryLocation}
+                  readOnly
+                  className={`w-full px-4 py-2 mt-2 border rounded-lg cursor-not-allowed focus:outline-none ${
+                    darkMode
+                      ? "bg-gray-700 text-gray-300 border-gray-600"
+                      : "bg-gray-200 text-gray-500 border-gray-300"
+                  }`}
+                  tabIndex={-1}
+                />
+              </div>
+
+              <div>
+                <label className={`block font-semibold ${darkMode ? "text-gray-300" : "text-gray-700"}`}>
+                  Pickup Date &amp; Time <span className="text-red-500">*</span>
+                </label>
+                <input
+                  type="datetime-local"
+                  value={pickupDateTime}
+                  onChange={(e) => setPickupDateTime(e.target.value)}
+                  className={inputClass}
+                />
+              </div>
+            </>
           )}
 
-          {/* Request Date & Time */}
           <div>
             <label className={`block font-semibold ${darkMode ? "text-gray-300" : "text-gray-700"}`}>
               Request Date &amp; Time <span className="text-red-500">*</span>
@@ -538,7 +564,6 @@ const RequestStock = () => {
           </div>
         </div>
 
-        {/* Message Block */}
         <div className="min-h-[1.5rem] mt-1">
           {error && <p className="text-red-500 text-sm">{error}</p>}
           {message && (

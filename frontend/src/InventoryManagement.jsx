@@ -4,24 +4,20 @@ import { useTheme, ThemeProvider } from "./context/ThemeContext";
 import { useAuth } from "./context/AuthContext";
 import { Navigate } from "react-router-dom";
 
-// Import components from the Components folder
-import DarkModeToggle from "./Components/DarkModeToggle";
-import StockView from "./Components/StockView";
-import StockEntry from "./Components/StockEntry";
-import RequestStock from "./Components/RequestStock";
-import StockRequests from "./Components/StockRequests";
-import DispatchManagement from "./Components/DispatchManagement";
-import DeliveryConfirmation from "./Components/DeliveryConfirmation";
-import Alerts from "./Components/Alerts";
-import Reports from "./Components/Reports";
-import AnimatedRedLightBadge from "./Components/AnimatedRedLightBadge";
-import AnimatedBlueBadge from "./Components/AnimatedBlueBadge";
-import AnimatedGreenBadge from "./Components/AnimatedGreenBadge";
-
-import ErrorBoundary from "./Components/ErrorBoundary";
-
-// NEW: Import your dedicated PickupRequests component
-import PickupRequests from "./Components/PickupRequests";
+import DarkModeToggle from "./components/DarkModeToggle";
+import StockView from "./components/StockView";
+import StockEntry from "./components/StockEntry";
+import RequestStock from "./components/RequestStock";
+import StockRequests from "./components/StockRequests";
+import DispatchManagement from "./components/DispatchManagement";
+import DeliveryConfirmation from "./components/DeliveryConfirmation";
+import Alerts from "./components/Alerts";
+import Reports from "./components/Reports";
+import AnimatedRedLightBadge from "./components/AnimatedRedLightBadge";
+import AnimatedBlueBadge from "./components/AnimatedBlueBadge";
+import AnimatedGreenBadge from "./components/AnimatedGreenBadge";
+import ErrorBoundary from "./components/ErrorBoundary";
+import PickupRequests from "./components/PickupRequests";
 
 // -------------------------
 // Sort Arrow
@@ -40,13 +36,14 @@ const SortArrow = ({ direction }) =>
   );
 
 // -------------------------
-// ReportCard Component (Reusable)
+// ReportCard (unchanged)
 // -------------------------
 const ReportCard = ({ title, headers, data, keys }) => {
   const { darkMode } = useTheme();
   const [searchTerm, setSearchTerm] = useState("");
   const [sortOpt, setSortOpt] = useState(keys[0]);
   const [sortDir, setSortDir] = useState("asc");
+
   const toggleSort = () => setSortDir((prev) => (prev === "asc" ? "desc" : "asc"));
 
   const filtered = data.filter((row) =>
@@ -102,7 +99,11 @@ const ReportCard = ({ title, headers, data, keys }) => {
               </option>
             ))}
           </select>
-          <button onClick={toggleSort} className="px-2 py-1 focus:outline-none" title="Toggle sort direction">
+          <button
+            onClick={toggleSort}
+            className="px-2 py-1 focus:outline-none"
+            title="Toggle sort direction"
+          >
             <SortArrow direction={sortDir} />
           </button>
         </div>
@@ -134,48 +135,47 @@ const ReportCard = ({ title, headers, data, keys }) => {
 };
 
 // -------------------------
-// InventoryManagement Component (Main)
+// InventoryManagement
 // -------------------------
 const InventoryManagement = () => {
   const { darkMode } = useTheme();
   const { user } = useAuth();
   const baseUrl = import.meta.env.VITE_BACKEND_URL || "http://localhost:5000";
 
-  // Redirect to login if user is not present
+  // Guard if user is not present
   if (!user) return <Navigate to="/login" replace />;
 
-  // Default active tab: "delivery" for drivers; otherwise "stockView"
+  // Default tab
   const [activeTab, setActiveTab] = useState(
     user.role.toLowerCase() === "driver" ? "delivery" : "stockView"
   );
 
-  // Add new tab for pick-up requests
+  // Tabs
   const tabs = [
     { key: "stockView", label: "Stock View" },
     { key: "stockEntry", label: "Stock Entry" },
     { key: "requestStock", label: "Create Request" },
     { key: "stockRequests", label: "Stock Requests" },
-    { key: "pickupRequests", label: "Pick-up Requests" }, // NEW TAB
+    { key: "pickupRequests", label: "Pick-up Requests" },
     { key: "dispatch", label: "Dispatch" },
     { key: "delivery", label: "Delivery" },
     { key: "alerts", label: "Alerts" },
     { key: "reports", label: "Reports" },
   ];
 
-  // Map new tab to permission
   const inventoryTabPermissions = {
     stockView: "canViewStock",
     stockEntry: "canAddStockEntry",
     requestStock: "canRequestStock",
     stockRequests: "canViewStockRequests",
-    pickupRequests: "canViewPickupRequests", // NEW PERMISSION
+    pickupRequests: "canViewPickupRequests",
     dispatch: "canDispatchStock",
     delivery: "canConfirmDelivery",
     alerts: "canViewAlerts",
     reports: "canViewReports",
   };
 
-  // Filter tabs based on user permissions
+  // Filter tabs
   let availableTabs = tabs;
   if (user.role !== "Administrator") {
     availableTabs = availableTabs.filter((tab) => {
@@ -187,27 +187,13 @@ const InventoryManagement = () => {
     availableTabs = [];
   }
 
-  // New state for pickup requests count (for AnimatedBlueBadge)
-  const [newPickupCount, setNewPickupCount] = useState(0);
-  useEffect(() => {
-    // Fetch all requests and count pickup requests not marked as "Seen by Driver"
-    fetch(`${baseUrl}/api/request_stock`)
-      .then((res) => res.json())
-      .then((data) => {
-        const pickups = data.filter(
-          (r) => r.request_type.toLowerCase() === "pickup"
-        );
-        const unseen = pickups.filter((r) => !r.status || r.status.toLowerCase() !== "seen by driver");
-        setNewPickupCount(unseen.length);
-      })
-      .catch((err) => console.error("Error fetching pickup requests for badge:", err));
-  }, [baseUrl, user]);
-
-  // Preserve notification badges as before
+  // -----------------------------
+  // Blue Badge: Stock Requests
+  // -----------------------------
   const [newCount, setNewCount] = useState(0);
-  const [newAlertsCount, setNewAlertsCount] = useState(0);
 
-  useEffect(() => {
+  // (CHANGED) function to refetch stock requests count
+  const refetchStockCount = () => {
     if (!user) return;
     if (user.role.toLowerCase() === "driver") {
       fetch(`${baseUrl}/api/request_stock`)
@@ -217,8 +203,11 @@ const InventoryManagement = () => {
         })
         .then((data) => {
           const pending = data.filter((r) => {
-            const status = r.approval_status ? r.approval_status.toLowerCase() : "";
-            return status !== "approved" && status !== "rejected";
+            // Only "stock" requests with "Pending" approval
+            return (
+              r.request_type?.toLowerCase() === "stock" &&
+              (r.approval_status || "").toLowerCase() === "pending"
+            );
           }).length;
           setNewCount(pending);
         })
@@ -231,22 +220,73 @@ const InventoryManagement = () => {
         })
         .then((data) => {
           if (user.role === "SiteWorker") {
-            const count = data.filter(
-              (r) => r.requestor_email === user.email && (!r.status || r.status.toLowerCase() === "pending")
-            ).length;
+            // For siteWorker, let's filter only "stock" requests they made that are still "Pending"
+            const count = data.filter((r) => {
+              return (
+                r.request_type?.toLowerCase() === "stock" &&
+                r.requestor_email === user.email &&
+                (r.approval_status || "").toLowerCase() === "pending"
+              );
+            }).length;
             setNewCount(count);
           } else {
+            // For Manager/Admin/InventoryManager, show all "stock" pending
             const pending = data.filter((r) => {
-              const status = r.approval_status ? r.approval_status.toLowerCase() : "";
-              return status !== "approved" && status !== "rejected";
+              return (
+                r.request_type?.toLowerCase() === "stock" &&
+                (r.approval_status || "").toLowerCase() === "pending"
+              );
             }).length;
             setNewCount(pending);
           }
         })
         .catch((err) => console.error("Error fetching stock requests:", err));
     }
+  };
+
+  // Run once on mount + re-run if user/activeTab changes
+  useEffect(() => {
+    refetchStockCount();
   }, [baseUrl, user, activeTab]);
 
+  // If siteWorker is on "stockRequests" tab, remove the blue badge
+  useEffect(() => {
+    if (activeTab === "stockRequests" && user.role === "SiteWorker") {
+      setNewCount(0);
+    }
+  }, [activeTab, user]);
+
+  // -----------------------------
+  // Green Badge: Pickup Requests
+  // -----------------------------
+  const [newPickupCount, setNewPickupCount] = useState(0);
+
+  // (CHANGED) function to refetch pickup requests count
+  const refetchPickupCount = () => {
+    if (!user) return;
+    fetch(`${baseUrl}/api/request_stock`)
+      .then((res) => {
+        if (!res.ok) throw new Error(`HTTP error! Status: ${res.status}`);
+        return res.json();
+      })
+      .then((data) => {
+        // For pickup: we consider "status" = "Pending"
+        const pickups = data.filter((r) => r.request_type?.toLowerCase() === "pickup");
+        const pendingPickups = pickups.filter((r) => (r.status || "").toLowerCase() === "pending");
+        setNewPickupCount(pendingPickups.length);
+      })
+      .catch((err) => console.error("Error fetching pickup requests:", err));
+  };
+
+  // Run once on mount + re-run if user changes
+  useEffect(() => {
+    refetchPickupCount();
+  }, [baseUrl, user]);
+
+  // -----------------------------
+  // Alerts Badge
+  // -----------------------------
+  const [newAlertsCount, setNewAlertsCount] = useState(0);
   useEffect(() => {
     if (activeTab === "alerts") {
       setNewAlertsCount(0);
@@ -263,12 +303,6 @@ const InventoryManagement = () => {
         .catch((err) => console.error("Error fetching alerts:", err));
     }
   }, [activeTab, baseUrl]);
-
-  useEffect(() => {
-    if (activeTab === "stockRequests" && user.role === "SiteWorker") {
-      setNewCount(0);
-    }
-  }, [activeTab, user]);
 
   return (
     <div className={`min-h-screen ${darkMode ? "bg-gray-900 text-white" : "bg-gray-100 text-black"}`}>
@@ -290,6 +324,7 @@ const InventoryManagement = () => {
           <DarkModeToggle />
         </div>
       </header>
+
       <nav className="p-6">
         <div className="flex flex-wrap gap-4 relative">
           {availableTabs.map((tab) => {
@@ -298,11 +333,12 @@ const InventoryManagement = () => {
             if (tab.key === "alerts") {
               btnClass += "bg-[#ff9933] text-white hover:bg-[#ff7700]";
             } else {
-              btnClass += activeTab === tab.key
-                ? "bg-green-500 text-white"
-                : darkMode
-                ? "bg-gray-700 text-white"
-                : "bg-gray-200 text-gray-900";
+              btnClass +=
+                activeTab === tab.key
+                  ? "bg-green-500 text-white"
+                  : darkMode
+                  ? "bg-gray-700 text-white"
+                  : "bg-gray-200 text-gray-900";
             }
             return (
               <button key={tab.key} onClick={() => setActiveTab(tab.key)} className={btnClass}>
@@ -315,6 +351,7 @@ const InventoryManagement = () => {
           })}
         </div>
       </nav>
+
       <main className="p-6 transition-all duration-500">
         {activeTab === "stockView" &&
           (user.role === "Administrator" || user.permissions?.includes("canViewStock")) && <StockView />}
@@ -327,24 +364,45 @@ const InventoryManagement = () => {
           )}
 
         {activeTab === "requestStock" &&
-          (user.role === "Administrator" || user.permissions?.includes("canRequestStock")) && <RequestStock />}
+          (user.role === "Administrator" || user.permissions?.includes("canRequestStock")) && (
+            <RequestStock
+              // (CHANGED) pass the two callbacks so new requests update badges immediately
+              onNewStockRequest={refetchStockCount}
+              onNewPickupRequest={refetchPickupCount}
+            />
+          )}
 
         {activeTab === "stockRequests" &&
-          (user.role === "Administrator" || user.permissions?.includes("canViewStockRequests")) && <StockRequests />}
+          (user.role === "Administrator" || user.permissions?.includes("canViewStockRequests")) && (
+            <StockRequests
+              // If you want immediate disappearance of the badge when Approve/Reject is clicked,
+              // you can pass a callback here as well, e.g. onStockRequestsUpdated={refetchStockCount}
+            />
+          )}
 
         {activeTab === "pickupRequests" &&
           (user.role === "Administrator" || user.permissions?.includes("canViewPickupRequests")) && (
-            <PickupRequests />
+            <PickupRequests
+              onMarkSeen={() => {
+                // (CHANGED) immediately decrement & re-fetch to ensure correct count
+                setNewPickupCount((prev) => Math.max(prev - 1, 0));
+                refetchPickupCount();
+              }}
+            />
           )}
 
         {activeTab === "dispatch" &&
           (user.role === "Administrator" || user.permissions?.includes("canDispatchStock")) && <DispatchManagement />}
 
         {activeTab === "delivery" &&
-          (user.role === "Administrator" || user.permissions?.includes("canConfirmDelivery")) && <DeliveryConfirmation />}
+          (user.role === "Administrator" || user.permissions?.includes("canConfirmDelivery")) && (
+            <DeliveryConfirmation />
+          )}
 
         {activeTab === "alerts" &&
-          (user.role === "Administrator" || user.permissions?.includes("canViewAlerts")) && <Alerts dumyAlerts={[]} />}
+          (user.role === "Administrator" || user.permissions?.includes("canViewAlerts")) && (
+            <Alerts dumyAlerts={[]} />
+          )}
 
         {activeTab === "reports" &&
           (user.role === "Administrator" || user.permissions?.includes("canViewReports")) && <Reports />}

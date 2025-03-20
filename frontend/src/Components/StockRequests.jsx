@@ -3,7 +3,7 @@ import React, { useState, useEffect } from "react";
 import { useTheme } from "../context/ThemeContext";
 import { useAuth } from "../context/AuthContext";
 
-const StockRequests = () => {
+const StockRequests = ({ onStatusChange }) => {
   const { darkMode } = useTheme();
   const { user } = useAuth();
   if (!user) return null; // Guard if user is not loaded
@@ -28,6 +28,11 @@ const StockRequests = () => {
   const visibleRows = isSiteWorker
     ? rows.filter((row) => row.requestor_email === user.email)
     : rows;
+
+  // Define showUrgencyColumn based on any non‑"normal" urgency values.
+  const showUrgencyColumn = visibleRows.some(
+    (row) => row.urgency && row.urgency.trim().toLowerCase() !== "normal"
+  );
 
   // Fetch complete user info for "Decision by" column.
   useEffect(() => {
@@ -108,12 +113,7 @@ const StockRequests = () => {
       .catch((error) => console.error("Error fetching stock requests:", error));
   }, [baseUrl]);
 
-  // Show Urgency column only if at least one row has urgency != "Normal".
-  const showUrgencyColumn = visibleRows.some(
-    (row) => row.urgency && row.urgency.trim().toLowerCase() !== "normal"
-  );
-
-  // Filter by search term.
+  // Update search filter (includes various fields except request_type, since we no longer show it)
   const filteredData = visibleRows.filter((row) => {
     const term = searchTerm.trim().toLowerCase();
     if (!term) return true;
@@ -128,16 +128,21 @@ const StockRequests = () => {
     return searchIn.includes(term);
   });
 
-  // Apply chip filter.
+  // Apply chip filter for approval status.
   const finalData = filteredData.filter((row) => {
     if (chipFilter === "All") return true;
     const decision = row.approval_status ? row.approval_status : "Pending";
     return decision.toLowerCase() === chipFilter.toLowerCase();
   });
 
+  // Minimal change: Only include rows where request_type is exactly "stock"
+  const typeFilteredData = finalData.filter(
+    (row) => row.request_type.toLowerCase() === "stock"
+  );
+
   // Sorting logic.
   const sortedData = sortField
-    ? [...finalData].sort((a, b) => {
+    ? [...typeFilteredData].sort((a, b) => {
         let fieldA = a[sortField] ?? "";
         let fieldB = b[sortField] ?? "";
         if (typeof fieldA === "number" && typeof fieldB === "number") {
@@ -149,7 +154,7 @@ const StockRequests = () => {
         if (fieldA > fieldB) return sortOrder === "asc" ? 1 : -1;
         return 0;
       })
-    : finalData;
+    : typeFilteredData;
 
   const handleSort = (field) => {
     if (sortField === field) {
@@ -193,13 +198,14 @@ const StockRequests = () => {
                   ...r,
                   decision_by: user.name,
                   decision_time: payload.decision_time,
-                  status: "Approved",
+                  // For stock requests, the approval_status should now be "Approved"
                   approval_status: "Approved",
                 }
               : r
           )
         );
         sendNotification(request, "Approved");
+        if (onStatusChange) onStatusChange();
       }
     } catch (error) {
       console.error("Error approving request:", error);
@@ -230,13 +236,13 @@ const StockRequests = () => {
                   ...r,
                   decision_by: user.name,
                   decision_time: payload.decision_time,
-                  status: "Rejected",
                   approval_status: "Rejected",
                 }
               : r
           )
         );
         sendNotification(request, "Rejected");
+        if (onStatusChange) onStatusChange();
       }
     } catch (error) {
       console.error("Error rejecting request:", error);
@@ -247,7 +253,7 @@ const StockRequests = () => {
 
   return (
     <div
-      className={`w-full p-4 rounded-xl transition-all duration-500 transform ${
+      className={`max-w-full mx-auto p-8 rounded-xl transition-all duration-500 transform ${
         darkMode
           ? "bg-gray-800 text-white shadow-lg border border-gray-700"
           : "bg-white text-gray-900 shadow-2xl border border-gray-200"
@@ -312,20 +318,6 @@ const StockRequests = () => {
         </div>
       </div>
 
-      {processing && (
-        <div className="fixed inset-0 bg-gray-900 bg-opacity-50 flex items-center justify-center z-50">
-          <svg
-            className="animate-spin h-12 w-12 text-white"
-            xmlns="http://www.w3.org/2000/svg"
-            fill="none"
-            viewBox="0 0 24 24"
-          >
-            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
-          </svg>
-        </div>
-      )}
-
       <div className="overflow-x-auto">
         <table className="min-w-full table-auto divide-y divide-gray-200">
           <thead className={darkMode ? "bg-gray-700" : "bg-gray-100"}>
@@ -334,46 +326,46 @@ const StockRequests = () => {
                 onClick={() => handleSort("job_id")}
                 className="px-4 py-2 text-left text-xs font-medium uppercase tracking-wider cursor-pointer"
               >
-                PROJECT{getSortIcon("job_id")}
+                PROJECT {getSortIcon("job_id")}
               </th>
               {isManagerOrAdmin && (
                 <th
                   onClick={() => handleSort("site_worker")}
                   className="px-4 py-2 text-left text-xs font-medium uppercase tracking-wider cursor-pointer"
                 >
-                  Requestor{getSortIcon("site_worker")}
+                  Requestor {getSortIcon("site_worker")}
                 </th>
               )}
               <th
                 onClick={() => handleSort("request_date")}
                 className="px-4 py-2 text-left text-xs font-medium uppercase tracking-wider cursor-pointer"
               >
-                Date{getSortIcon("request_date")}
+                Date {getSortIcon("request_date")}
               </th>
               <th
                 onClick={() => handleSort("item_code")}
                 className="px-4 py-2 text-left text-xs font-medium uppercase tracking-wider cursor-pointer"
               >
-                Item{getSortIcon("item_code")}
+                Item {getSortIcon("item_code")}
               </th>
               <th
                 onClick={() => handleSort("quantity")}
                 className="px-4 py-2 text-left text-xs font-medium uppercase tracking-wider cursor-pointer"
               >
-                Quantity{getSortIcon("quantity")}
+                Quantity {getSortIcon("quantity")}
               </th>
               <th
                 onClick={() => handleSort("delivery_location")}
                 className="px-4 py-2 text-left text-xs font-medium uppercase tracking-wider cursor-pointer"
               >
-                Delivery Location{getSortIcon("delivery_location")}
+                Delivery Location {getSortIcon("delivery_location")}
               </th>
               {showUrgencyColumn && (
                 <th
                   onClick={() => handleSort("urgency")}
                   className="px-4 py-2 text-left text-xs font-medium uppercase tracking-wider cursor-pointer"
                 >
-                  Urgency{getSortIcon("urgency")}
+                  Urgency {getSortIcon("urgency")}
                 </th>
               )}
               {user.role === "Driver" && (
@@ -389,6 +381,7 @@ const StockRequests = () => {
               </th>
               {(isManagerOrAdmin || isSiteWorker) && (
                 <th className="px-4 py-2 text-left text-xs font-medium uppercase tracking-wider">
+                  {/* ACTIONS column now displays the approval_status value */}
                   {user.permissions && user.permissions.includes("canApproveStockRequests")
                     ? "Actions"
                     : "Decision"}
@@ -466,7 +459,8 @@ const StockRequests = () => {
                       {isSiteWorker ? (
                         <span>{request.approval_status || "-"}</span>
                       ) : (
-                        request.status === "Pending" ? (
+                        request.approval_status &&
+                        request.approval_status.toLowerCase() === "pending" ? (
                           user.permissions && user.permissions.includes("canApproveStockRequests") ? (
                             <>
                               <button
@@ -488,7 +482,7 @@ const StockRequests = () => {
                             <span>{request.approval_status || "Pending"}</span>
                           )
                         ) : (
-                          getStatusBadge(request.status)
+                          getStatusBadge(request.approval_status)
                         )
                       )}
                     </td>

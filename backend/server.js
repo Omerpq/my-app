@@ -133,8 +133,7 @@ app.post("/api/auth/forgot-password", async (req, res) => {
       [user.id, token, expiresAt]
     );
 
-    const resetLink = `https://my-app-1-uzea.onrender.com/reset-password/${token}`;
-`;
+    const resetLink = `http://localhost:5173/reset-password/${token}`;
     console.log(`Password reset link for ${email}: ${resetLink}`);
 
     await sendResetEmail(email, resetLink);
@@ -321,8 +320,8 @@ app.get("/api/alerts", async (req, res) => {
 // -----------------------
 // Stock Request Endpoints (Updated to include pickup fields)
 // -----------------------
+// >>>>>>>>  MINIMALLY UPDATED POST ROUTE  <<<<<<<<
 app.post("/api/request_stock", async (req, res) => {
-  // Extract fields including new pickup-related ones.
   const {
     site_worker,
     request_date,
@@ -335,7 +334,7 @@ app.post("/api/request_stock", async (req, res) => {
     job_id,
     pickup_requested,
     pickup_datetime,
-    request_type, // Expected values: "stock", "pickup", or "both"
+    request_type, // Expected values: "stock" or "pickup"
   } = req.body;
 
   // Basic required fields.
@@ -344,27 +343,54 @@ app.post("/api/request_stock", async (req, res) => {
       error: "Missing required fields: site_worker, request_date, requestor_email, and job_id",
     });
   }
-  // For stock or both requests, require stock-specific fields.
-  if (request_type !== "pickup") {
+  // If it's a 'stock' request, require stock-specific fields.
+  if (request_type === "stock") {
     if (!delivery_location || !item_code || !item_name || !quantity) {
-      return res.status(400).json({ error: "Missing required fields for stock request" });
+      return res.status(400).json({
+        error: "Missing required fields for stock request (delivery_location, item_code, item_name, quantity).",
+      });
     }
   }
 
-  // For pickup-only requests, set stock-related fields to defaults.
-  const finalDeliveryLocation = request_type === "pickup" ? "" : trimAndLimit(delivery_location);
-  const finalItemCode = request_type === "pickup" ? "" : trimAndLimit(item_code);
-  const finalItemName = request_type === "pickup" ? "" : trimAndLimit(item_name);
-  const finalQuantity = request_type === "pickup" ? 0 : parseInt(quantity, 10);
-  const finalUrgency =
-    request_type === "pickup"
-      ? "Normal"
-      : urgency && urgency.toString().trim() !== ""
-      ? trimAndLimit(urgency)
-      : "Normal";
+  // For both request types, use the provided delivery_location.
+  const finalDeliveryLocation = delivery_location && delivery_location.trim()
+    ? delivery_location.trim()
+    : "";
 
-  // Handle pickup_datetime: if empty or just whitespace, set to null.
-  const finalPickupDatetime = pickup_datetime && pickup_datetime.trim() !== "" ? pickup_datetime : null;
+  let finalItemCode = "";
+  let finalItemName = "";
+  let finalQuantity = 0;
+  let finalUrgency = "Normal";
+
+  if (request_type === "stock") {
+    finalItemCode = trimAndLimit(item_code);
+    finalItemName = trimAndLimit(item_name);
+    finalQuantity = parseInt(quantity, 10) || 0;
+    finalUrgency =
+      urgency && urgency.toString().trim() !== ""
+        ? trimAndLimit(urgency)
+        : "Normal";
+  }
+
+  // For pickup requests, parse pickup_datetime if provided.
+  const finalPickupDatetime =
+    pickup_datetime && pickup_datetime.trim() !== ""
+      ? pickup_datetime.trim()
+      : null;
+
+  // --- Minimal Changes for Status Columns ---
+  // For stock requests, we want the "status" column to be "N/A" and the "approval_status" to reflect the actual status.
+  // For pickup requests, we want the "approval_status" column to be "N/A" and the "status" column to reflect the actual status.
+  let finalStatus = "";
+  let finalApprovalStatus = "";
+  if (request_type === "stock") {
+    finalStatus = "N/A";
+    finalApprovalStatus = "Pending";
+  } else if (request_type === "pickup") {
+    finalStatus = "Pending";
+    finalApprovalStatus = "N/A";
+  }
+  // --- End Minimal Changes ---
 
   try {
     const insertQuery = `
@@ -383,7 +409,8 @@ app.post("/api/request_stock", async (req, res) => {
         pickup_requested,
         pickup_datetime,
         request_type
-      ) VALUES ($1, $2, $3, $4, 'Pending', 'Pending', $5, $6, $7, $8, $9, $10, $11, $12)
+      )
+      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)
       RETURNING *
     `;
     const values = [
@@ -391,6 +418,8 @@ app.post("/api/request_stock", async (req, res) => {
       request_date.toString().trim(),
       finalDeliveryLocation,
       finalUrgency,
+      finalStatus,
+      finalApprovalStatus,
       finalItemCode,
       finalItemName,
       finalQuantity,
@@ -403,8 +432,8 @@ app.post("/api/request_stock", async (req, res) => {
 
     const result = await pool.query(insertQuery, values);
 
-    // For stock-related requests, recalc inventory totals and update alerts.
-    if (request_type !== "pickup") {
+    // For stock requests, recalc inventory totals & update any low-stock alerts.
+    if (request_type === "stock") {
       const totalRes = await pool.query(
         "SELECT SUM(quantity) as total_quantity FROM inventory WHERE item_code = $1",
         [finalItemCode]
@@ -421,12 +450,21 @@ app.post("/api/request_stock", async (req, res) => {
         }
       }
     }
-    res.status(201).json({ message: "Request added successfully", data: result.rows[0] });
+
+    res.status(201).json({
+      message: "Request added successfully",
+      data: result.rows[0],
+    });
   } catch (error) {
     console.error("Error adding request_stock:", error);
-    res.status(500).json({ error: "Failed to insert request_stock", details: error.message });
+    res.status(500).json({
+      error: "Failed to insert request_stock",
+      details: error.message,
+    });
   }
 });
+// <<<<<<<<  END OF MINIMALLY UPDATED POST ROUTE  >>>>>>>>>
+
 
 app.get("/api/request_stock", async (req, res) => {
   try {
@@ -474,12 +512,11 @@ app.put("/api/request_stock/:id/reject", async (req, res) => {
   }
 });
 
+// -----------------------
+// Updated Mark-Seen Endpoint for Pickup Requests
+// -----------------------
 app.put("/api/request_stock/:id/mark-seen", async (req, res) => {
   const { id } = req.params;
-  const { driver_seen_time } = req.body; // Optional: you can record when it was seen if desired
-  if (!driver_seen_time) {
-    return res.status(400).json({ error: "Missing driver_seen_time" });
-  }
   try {
     const result = await pool.query(
       "UPDATE request_stock SET status = 'Seen by Driver' WHERE id = $1 RETURNING *",
@@ -494,6 +531,7 @@ app.put("/api/request_stock/:id/mark-seen", async (req, res) => {
     res.status(500).json({ error: "Failed to mark request as seen", details: error.message });
   }
 });
+
 
 // -----------------------
 // NEW: Mount Stock Request Routes
@@ -542,7 +580,9 @@ app.post("/api/inventory", async (req, res) => {
   }
 
   try {
-    console.log(`Adding item: ${trimmedItemCode} - ${trimmedItemName}, Quantity: ${parsedQuantity}, Description: ${trimmedDescription}`);
+    console.log(
+      `Adding item: ${trimmedItemCode} - ${trimmedItemName}, Quantity: ${parsedQuantity}, Description: ${trimmedDescription}`
+    );
     const result = await pool.query(
       "INSERT INTO inventory (item_code, item_name, quantity, description, stock_entry_time) VALUES ($1, $2, $3, $4, $5) RETURNING *",
       [trimmedItemCode, trimmedItemName, parsedQuantity, trimmedDescription, isoStockEntryTime]
@@ -651,7 +691,7 @@ app.get("/api/inventory/levels", async (req, res) => {
     res.json(result.rows);
   } catch (error) {
     console.error("Error fetching aggregated inventory levels:", error);
-    res.status(500).json({ error: "Failed to fetch inventory levels" });
+    res.status(500).json({ error: "Failed to fetch aggregated inventory levels" });
   }
 });
 
@@ -720,11 +760,10 @@ app.post("/api/dispatches", async (req, res) => {
 
     if (actualRemainingQty < 3) {
       await pool.query(
-        `INSERT INTO alerts (type, message, date, is_read, settled, settled_time)
-         VALUES ($1, $2, NOW(), false, false, NULL)
-         ON CONFLICT (type, message) DO UPDATE
-           SET date = NOW(), settled = false, settled_time = NULL`,
-        ["Low Stock Alert", `Item ${itemsDispatched} has low stock: ${actualRemainingQty} remaining.`]
+        `UPDATE alerts
+         SET settled = false, settled_time = NULL, date = NOW()
+         WHERE type = 'Low Stock Alert' AND message ILIKE $1`,
+        [`%${itemsDispatched}%`]
       );
     } else {
       await pool.query(

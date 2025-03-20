@@ -4,20 +4,20 @@ import { useTheme, ThemeProvider } from "./context/ThemeContext";
 import { useAuth } from "./context/AuthContext";
 import { Navigate } from "react-router-dom";
 
-import DarkModeToggle from "./components/DarkModeToggle";
-import StockView from "./components/StockView";
-import StockEntry from "./components/StockEntry";
-import RequestStock from "./components/RequestStock";
-import StockRequests from "./components/StockRequests";
-import DispatchManagement from "./components/DispatchManagement";
-import DeliveryConfirmation from "./components/DeliveryConfirmation";
-import Alerts from "./components/Alerts";
-import Reports from "./components/Reports";
-import AnimatedRedLightBadge from "./components/AnimatedRedLightBadge";
-import AnimatedBlueBadge from "./components/AnimatedBlueBadge";
-import AnimatedGreenBadge from "./components/AnimatedGreenBadge";
-import ErrorBoundary from "./components/ErrorBoundary";
-import PickupRequests from "./components/PickupRequests";
+import DarkModeToggle from "./Components/DarkModeToggle";
+import StockView from "./Components/StockView";
+import StockEntry from "./Components/StockEntry";
+import RequestStock from "./Components/RequestStock";
+import StockRequests from "./Components/StockRequests";
+import DispatchManagement from "./Components/DispatchManagement";
+import DeliveryConfirmation from "./Components/DeliveryConfirmation";
+import Alerts from "./Components/Alerts";
+import Reports from "./Components/Reports";
+import AnimatedRedLightBadge from "./Components/AnimatedRedLightBadge";
+import AnimatedBlueBadge from "./Components/AnimatedBlueBadge";
+import AnimatedGreenBadge from "./Components/AnimatedGreenBadge";
+import ErrorBoundary from "./Components/ErrorBoundary";
+import PickupRequests from "./Components/PickupRequests";
 
 // -------------------------
 // Sort Arrow

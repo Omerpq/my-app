@@ -1,7 +1,7 @@
 // src/sections/StockRequestOverviewSection.jsx
 import React from "react";
-import DashboardSection from "../components/DashboardSection"; 
-import StockRequestOverviewChart from "../components/StockRequestOverviewChart";
+import DashboardSection from "../Components/DashboardSection"; 
+import StockRequestOverviewChart from "../Components/StockRequestOverviewChart";
 
 const StockRequestOverviewSection = ({ stats, darkMode, french }) => {
   return (
